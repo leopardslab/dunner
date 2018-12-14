@@ -21,8 +21,8 @@ deploy:
   args: 'prod'
 status:
 - name: 'mesosphere/aws-cli'
-  command: ['aws', 'elasticbeanstalk describe-events --environment-name #1'] 
-  # This uses args passed to the task, `#1` means first arg
+  command: ['aws', 'elasticbeanstalk describe-events --environment-name $1'] 
+  # This uses args passed to the task, `$1` means first arg
   envs: 
    - AWS_ACCESS_KEY_ID=`$AWS_KEY`
    - AWS_SECRET_ACCESS_KEY=`$AWS_SECRET`
@@ -36,8 +36,12 @@ Now you can use as,
 
 ## NOTE
 This work is still in progress.
+
+## Development Plan
 ### `v0.1` 
 - [x] Ability to define set of tasks and steps and run the task
 - [ ] Mount current dir as a volume
-- [ ] Ability to add ENV variables
 - [ ] Ability to pass arguments to tasks
+### `v1.0` 
+- [ ] Ability to add ENV variables
+- [ ] Ability to define the sub-dir that should be mounted to the Docker 
