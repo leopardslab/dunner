@@ -37,4 +37,7 @@ Now you can use as,
 ## NOTE
 This work is still in progress.
 ### `v0.1` 
-1. Ability to define set of tasks and steps and run the task
+- [x] Ability to define set of tasks and steps and run the task
+- [ ] Mount current dir as a volume
+- [ ] Ability to add ENV variables
+- [ ] Ability to pass arguments to tasks
