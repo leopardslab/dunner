@@ -36,3 +36,5 @@ Now you can use as,
 
 ##NOTE
 This work is still in progress.
+### `v0.1` 
+1. Ability to define set of tasks and steps and run the task
