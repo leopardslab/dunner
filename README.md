@@ -45,3 +45,5 @@ This work is still in progress.
 ### `v1.0` 
 - [ ] Ability to add ENV variables
 - [ ] Ability to define the sub-dir that should be mounted to the Docker 
+- [ ] Ability to use a task as a step for another task
+- [ ] Ability to get ENV, param, etc values from host environment variables or `.env` file
