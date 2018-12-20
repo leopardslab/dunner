@@ -1,0 +1,5 @@
+build:
+    - image: node
+      command: ["node", "--version"]
+    - image: node
+      command: ["npm", "--version"]
