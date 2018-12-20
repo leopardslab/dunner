@@ -1,7 +1,7 @@
 package main
 
 import (
-	"RSVPLK/Dunner/cmd"
+	"github.com/leopardslab/Dunner/cmd"
 )
 
 func main() {
