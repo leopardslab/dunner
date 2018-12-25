@@ -1,11 +1,11 @@
 package cmd
 
 
-type service struct{
+type Service struct{
 
 }
 
-func Command(cmd *cobra.Command, args []string) {
+func(s Service) Command(cmd *cobra.Command, args []string) {
 
   // TODO Should get the name of the Dunner file from a config or ENV
   b, err := ioutil.ReadFile("./.dunner.yaml")

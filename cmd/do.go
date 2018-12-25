@@ -27,8 +27,11 @@ func init() {
 
 
 var doCmd = &cobra.Command{
+
+	var s Service
+
 	Use:   "do",
 	Short: "Do whatever you say",
 	Long:  `You can run any task defined on the '.dunner.yaml' with this command`,
-	Run: Command(cmd,args),
+	Run: s.Command(cmd,args),
 }
