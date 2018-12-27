@@ -16,8 +16,9 @@ type Step struct {
 	Name    string
 	Image   string
 	Command [] string
-	Env     [] string
-	WorkDir [] string
+	Env     map[string]string
+	WorkDir string
+	Volumes map[string]string
 }
 
 func (step Step) Do() {
