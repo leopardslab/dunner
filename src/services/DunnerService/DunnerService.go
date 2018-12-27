@@ -6,10 +6,7 @@ import (
 	"github.com/leopardslab/Dunner/src/services/ConfigService"
 )
 
-type Service struct {
-}
-
-func (s Service) Do(cmd *cobra.Command, args []string) {
+func Do(cmd *cobra.Command, args []string) {
 
 	var configs = ConfigService.GetConfigs()
 	for _, stepDefinition := range configs.Tasks[args[0]] {
