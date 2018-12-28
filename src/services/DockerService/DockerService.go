@@ -9,6 +9,8 @@ import (
 	"docker.io/go-docker/api/types/container"
 	"strings"
 	"github.com/docker/docker/pkg/stdcopy"
+	"docker.io/go-docker/api/types/mount"
+	"path/filepath"
 )
 
 type Step struct {
@@ -34,10 +36,24 @@ func (step Step) Do() {
 		panic(err)
 	}
 
+	path, err := filepath.Abs("./")
+	if err != nil {
+		panic(err)
+	}
+
 	resp, err := cli.ContainerCreate(ctx, &container.Config{
 		Image: step.Image,
 		Cmd:   step.Command,
-	}, nil, nil, "")
+		WorkingDir: "/dunner",
+	}, &container.HostConfig{
+		Mounts: []mount.Mount{
+			{
+				Type:   mount.TypeBind,
+				Source: path,
+				Target: "/dunner",
+			},
+		},
+	}, nil, "")
 	if err != nil {
 		panic(err)
 	}
