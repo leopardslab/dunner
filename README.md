@@ -1,6 +1,6 @@
 # Dunner
 
-Dunner is a task runner tool like Grunt but used Docker images like CircleCI do. You can define tasks and steps of the tasks in your `.dunner.yaml` file and then run these steps with `Dunner do taskname`
+Dunner is a task runner tool like Grunt but uses Docker images like CircleCI do. You can define tasks and steps of the tasks in your `.dunner.yaml` file and then run these steps with `Dunner do taskname`
 
 
 Example `.dunner.yaml`
@@ -30,8 +30,8 @@ status:
 ```
 
 Now you can use as,
- 1. `Dunner deploy`
- 2. `Dunner status prod`
+ 1. `Dunner do deploy`
+ 2. `Dunner do status prod`
 
 
 ## NOTE
@@ -45,6 +45,7 @@ This work is still in progress. See the development plan.
 - [ ] Ability to pass arguments to tasks
 ### [`v1.0`](https://github.com/leopardslab/Dunner/milestone/1) 
 - [ ] Ability to add ENV variables
-- [ ] Ability to define the sub-dir that should be mounted to the Docker 
+- [ ] Ability to define the sub-dir that should be mounted to the task containers
+- [ ] Ability to mount other dirs to the task containers
 - [ ] Ability to use a task as a step for another task
 - [ ] Ability to get ENV, param, etc values from host environment variables or `.env` file
