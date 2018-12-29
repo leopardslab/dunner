@@ -41,7 +41,7 @@ This work is still in progress. See the development plan.
 
 ### [`v0.1`](https://github.com/leopardslab/Dunner/milestone/2)
 - [x] Ability to define set of tasks and steps and run the task
-- [ ] Mount current dir as a volume
+- [x] Mount current dir as a volume
 - [ ] Ability to pass arguments to tasks
 ### [`v1.0`](https://github.com/leopardslab/Dunner/milestone/1) 
 - [ ] Ability to add ENV variables
