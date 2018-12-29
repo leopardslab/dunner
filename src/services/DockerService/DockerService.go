@@ -71,7 +71,8 @@ func (step Step) Do() {
 	case <-statusCh:
 	}
 
-	out, err := cli.ContainerLogs(ctx, resp.ID, types.ContainerLogsOptions{ShowStdout: true})
+	out, err := cli.ContainerLogs(ctx, resp.ID, types.ContainerLogsOptions{
+		ShowStdout: true, ShowStderr: true,})
 	if err != nil {
 		panic(err)
 	}
