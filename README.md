@@ -49,3 +49,9 @@ This work is still in progress. See the development plan.
 - [ ] Ability to mount other dirs to the task containers
 - [ ] Ability to use a task as a step for another task
 - [ ] Ability to get ENV, param, etc values from host environment variables or `.env` file
+
+# Guides
+
+* [User Guide](https://github.com/leopardslab/Dunner/wiki/User-Guide)
+* [Installation Guide](https://github.com/leopardslab/Dunner/wiki/Installation-Guide)
+* [Developer Guide](https://github.com/leopardslab/Dunner/wiki/Developer-Guide)
