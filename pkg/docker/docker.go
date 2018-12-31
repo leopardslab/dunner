@@ -6,11 +6,13 @@ import (
 	"docker.io/go-docker/api/types"
 	"docker.io/go-docker/api/types/container"
 	"docker.io/go-docker/api/types/mount"
-	log "github.com/sirupsen/logrus"
+	"github.com/leopardslab/Dunner/internal/logger"
 	"io"
 	"path/filepath"
 	"strings"
 )
+
+var log = logger.Log
 
 type Step struct {
 	Task    string

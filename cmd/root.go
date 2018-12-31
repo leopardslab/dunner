@@ -3,10 +3,12 @@ package cmd
 import (
 	"docker.io/go-docker"
 	"fmt"
-	log "github.com/sirupsen/logrus"
+	"github.com/leopardslab/Dunner/internal/logger"
 	"github.com/spf13/cobra"
 	"os"
 )
+
+var log = logger.Log
 
 var rootCmd = &cobra.Command{
 	Use:   "dunner",
