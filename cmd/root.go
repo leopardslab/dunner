@@ -5,6 +5,7 @@ import (
 	"os"
 	"github.com/spf13/cobra"
 	"docker.io/go-docker"
+	log "github.com/sirupsen/logrus"
 )
 
 var rootCmd = &cobra.Command{
@@ -15,7 +16,7 @@ var rootCmd = &cobra.Command{
 
 		_, err := docker.NewEnvClient()
 		if err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
 
 		fmt.Println("Dunner running!")
@@ -24,7 +25,7 @@ var rootCmd = &cobra.Command{
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 		os.Exit(1)
 	}
 }

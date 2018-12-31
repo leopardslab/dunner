@@ -2,7 +2,7 @@ package DockerService
 
 import (
 	"os"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"context"
 	"docker.io/go-docker/api/types"
 	"docker.io/go-docker"
@@ -28,17 +28,17 @@ func (step Step) Do() {
 	ctx := context.Background()
 	cli, err := docker.NewEnvClient()
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	_, err = cli.ImagePull(ctx, step.Image, types.ImagePullOptions{})
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	path, err := filepath.Abs("./")
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	resp, err := cli.ContainerCreate(ctx, &container.Config{
@@ -55,18 +55,18 @@ func (step Step) Do() {
 		},
 	}, nil, "")
 	if err != nil {
-		panic(err)
+		 log.Fatal(err)
 	}
 
 	if err := cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	statusCh, errCh := cli.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
 	select {
 	case err := <-errCh:
 		if err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
 	case <-statusCh:
 	}
@@ -74,7 +74,7 @@ func (step Step) Do() {
 	out, err := cli.ContainerLogs(ctx, resp.ID, types.ContainerLogsOptions{
 		ShowStdout: true, ShowStderr: true,})
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	log.Printf("Running task '%+v' on '%+v' Docker with command '%+v'", step.Task, step.Image, strings.Join(step.Command, " "))
