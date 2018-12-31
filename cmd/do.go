@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/leopardslab/Dunner/src/services/DunnerService"
+	"github.com/leopardslab/Dunner/pkg/dunner"
 )
 
 type Config struct {
@@ -18,5 +18,5 @@ var doCmd = &cobra.Command{
 	Use:   "do",
 	Short: "Do whatever you say",
 	Long:  `You can run any task defined on the '.dunner.yaml' with this command`,
-	Run: DunnerService.Do,
+	Run: dunner.Do,
 }
