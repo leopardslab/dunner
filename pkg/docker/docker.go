@@ -1,4 +1,4 @@
-package DockerService
+package docker
 
 import (
 	"os"

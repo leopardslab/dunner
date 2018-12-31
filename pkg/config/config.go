@@ -1,4 +1,4 @@
-package ConfigService
+package config
 
 import (
 	"io/ioutil"
