@@ -1,16 +1,15 @@
 package docker
 
 import (
-	"os"
-	log "github.com/sirupsen/logrus"
 	"context"
-	"docker.io/go-docker/api/types"
 	"docker.io/go-docker"
+	"docker.io/go-docker/api/types"
 	"docker.io/go-docker/api/types/container"
-	"strings"
-	"github.com/docker/docker/pkg/stdcopy"
 	"docker.io/go-docker/api/types/mount"
+	log "github.com/sirupsen/logrus"
+	"io"
 	"path/filepath"
+	"strings"
 )
 
 type Step struct {
@@ -23,7 +22,13 @@ type Step struct {
 	Volumes map[string]string
 }
 
-func (step Step) Do() {
+func (step Step) Do() (*io.ReadCloser, error) {
+
+	var (
+		hostMountFilepath   = "./"
+		containerWorkingDir = "/dunner"
+		hostMountTarget     = "/dunner"
+	)
 
 	ctx := context.Background()
 	cli, err := docker.NewEnvClient()
@@ -36,26 +41,30 @@ func (step Step) Do() {
 		log.Fatal(err)
 	}
 
-	path, err := filepath.Abs("./")
+	path, err := filepath.Abs(hostMountFilepath)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	resp, err := cli.ContainerCreate(ctx, &container.Config{
-		Image: step.Image,
-		Cmd:   step.Command,
-		WorkingDir: "/dunner",
-	}, &container.HostConfig{
-		Mounts: []mount.Mount{
-			{
-				Type:   mount.TypeBind,
-				Source: path,
-				Target: "/dunner",
+	resp, err := cli.ContainerCreate(
+		ctx,
+		&container.Config{
+			Image:      step.Image,
+			Cmd:        step.Command,
+			WorkingDir: containerWorkingDir,
+		},
+		&container.HostConfig{
+			Mounts: []mount.Mount{
+				{
+					Type:   mount.TypeBind,
+					Source: path,
+					Target: hostMountTarget,
+				},
 			},
 		},
-	}, nil, "")
+		nil, "")
 	if err != nil {
-		 log.Fatal(err)
+		log.Fatal(err)
 	}
 
 	if err := cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
@@ -72,12 +81,14 @@ func (step Step) Do() {
 	}
 
 	out, err := cli.ContainerLogs(ctx, resp.ID, types.ContainerLogsOptions{
-		ShowStdout: true, ShowStderr: true,})
+		ShowStdout: true,
+		ShowStderr: true,
+	})
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	log.Printf("Running task '%+v' on '%+v' Docker with command '%+v'", step.Task, step.Image, strings.Join(step.Command, " "))
-	stdcopy.StdCopy(os.Stdout, os.Stderr, out)
+	log.Info("Running task '%+v' on '%+v' Docker with command '%+v'", step.Task, step.Image, strings.Join(step.Command, " "))
+	return &out, nil
 
 }

@@ -1,21 +1,39 @@
 package dunner
 
 import (
-	"github.com/spf13/cobra"
-	"github.com/leopardslab/Dunner/pkg/docker"
+	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/leopardslab/Dunner/pkg/config"
+	"github.com/leopardslab/Dunner/pkg/docker"
+	"github.com/spf13/cobra"
+	"os"
 )
 
-func Do(cmd *cobra.Command, args []string) {
+func Do(_ *cobra.Command, args []string) {
 
-	var configs = config.GetConfigs()
+	// TODO Should get the name of the Dunner file from a constant or an environment variable or config file
+	var dunnerFile = ".dunner.yaml"
+
+	configs, err := config.GetConfigs(dunnerFile)
+	if err != nil {
+		panic(err)
+	}
+
 	for _, stepDefinition := range configs.Tasks[args[0]] {
-		step := docker.Step {
-			Task: args[0],
-			Name: stepDefinition.Name,
-			Image: stepDefinition.Image,
+		step := docker.Step{
+			Task:    args[0],
+			Name:    stepDefinition.Name,
+			Image:   stepDefinition.Image,
 			Command: stepDefinition.Command,
 		}
-		step.Do()
+		pout, err := step.Do()
+		if err != nil {
+			panic(err)
+		}
+
+		_, err = stdcopy.StdCopy(os.Stdout, os.Stderr, *pout)
+		if err != nil {
+			panic(err)
+		}
 	}
+
 }
