@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	log "github.com/sirupsen/logrus"
+	"fmt"
 	"github.com/spf13/cobra"
 )
 
@@ -14,6 +14,6 @@ var versionCmd = &cobra.Command{
 	Short: "Print the version number of Dunner",
 	Long:  `All software has versions. This is Dunners's`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.Println("v0.1")
+		fmt.Println("v0.1")
 	},
 }
