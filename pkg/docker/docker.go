@@ -88,7 +88,7 @@ func (step Step) Do() (*io.ReadCloser, error) {
 		log.Fatal(err)
 	}
 
-	log.Info("Running task '%+v' on '%+v' Docker with command '%+v'", step.Task, step.Image, strings.Join(step.Command, " "))
+	log.Infof("Running task '%+v' on '%+v' Docker with command '%+v'", step.Task, step.Image, strings.Join(step.Command, " "))
 	return &out, nil
 
 }
