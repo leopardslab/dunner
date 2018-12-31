@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"github.com/spf13/cobra"
 	"docker.io/go-docker"
@@ -18,13 +19,13 @@ var rootCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		log.Println("Dunner running!")
+		fmt.Println("Dunner running!")
 	},
 }
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		log.Println(err)
+		log.Fatal(err)
 		os.Exit(1)
 	}
 }
