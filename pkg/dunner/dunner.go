@@ -2,12 +2,14 @@ package dunner
 
 import (
 	"github.com/docker/docker/pkg/stdcopy"
+	"github.com/leopardslab/Dunner/internal/logger"
 	"github.com/leopardslab/Dunner/pkg/config"
 	"github.com/leopardslab/Dunner/pkg/docker"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"os"
 )
+
+var log = logger.Log
 
 func Do(_ *cobra.Command, args []string) {
 

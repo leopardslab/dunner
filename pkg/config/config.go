@@ -1,10 +1,12 @@
 package config
 
 import (
-	log "github.com/sirupsen/logrus"
+	"github.com/leopardslab/Dunner/internal/logger"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 )
+
+var log = logger.Log
 
 type Task struct {
 	Name    string    `yaml:"name"`
