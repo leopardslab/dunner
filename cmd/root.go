@@ -1,11 +1,11 @@
 package cmd
 
 import (
-	"fmt"
-	"os"
-	"github.com/spf13/cobra"
 	"docker.io/go-docker"
+	"fmt"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
+	"os"
 )
 
 var rootCmd = &cobra.Command{
