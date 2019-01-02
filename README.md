@@ -1,5 +1,7 @@
 # Dunner
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/b2275e331d2745dc9527d45efbbf2da2)](https://app.codacy.com/app/rehrumesh/Dunner?utm_source=github.com&utm_medium=referral&utm_content=leopardslab/Dunner&utm_campaign=Badge_Grade_Settings)
+
 Dunner is a task runner tool like Grunt but uses Docker images like CircleCI do. You can define tasks and steps of the tasks in your `.dunner.yaml` file and then run these steps with `Dunner do taskname`
 
 
