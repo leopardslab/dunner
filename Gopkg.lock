@@ -28,12 +28,31 @@
   version = "v1.0.0"
 
 [[projects]]
+  branch = "master"
+  digest = "1:6da51e5ec493ad2b44cb04129e2d0a068c8fb9bd6cb5739d199573558696bb94"
+  name = "github.com/Azure/go-ansiterm"
+  packages = [
+    ".",
+    "winterm",
+  ]
+  pruneopts = "UT"
+  revision = "d6e3b3328b783f23731bc4d058875b0371ff8109"
+
+[[projects]]
   digest = "1:f9ae348e1f793dcf9ed930ed47136a67343dbd6809c5c91391322267f4476892"
   name = "github.com/Microsoft/go-winio"
   packages = ["."]
   pruneopts = "UT"
   revision = "97e4973ce50b2ff5f09635a57e2b88a037aae829"
   version = "v0.4.11"
+
+[[projects]]
+  branch = "master"
+  digest = "1:3721a10686511b80c052323423f0de17a8c06d417dbdd3b392b1578432a33aae"
+  name = "github.com/Nvveen/Gotty"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "cd527374f1e5bff4938207604a14f2e38a9cf512"
 
 [[projects]]
   digest = "1:4189ee6a3844f555124d9d2656fe7af02fca961c2a9bad9074789df13a0c62e0"
@@ -46,12 +65,17 @@
   revision = "edc3ab29cdff8694dd6feb85cfeb4b5f1b38ed9c"
 
 [[projects]]
-  digest = "1:77c74b43bddc342f33b174384b771c66bff5858b79fa60dfca0ffbfc78db7f5b"
+  branch = "master"
+  digest = "1:a2a7b6b4af8ed07209d72648405e66cadd24e10633eb79916abd219f334d1bd8"
   name = "github.com/docker/docker"
-  packages = ["pkg/stdcopy"]
+  packages = [
+    "pkg/jsonmessage",
+    "pkg/stdcopy",
+    "pkg/term",
+    "pkg/term/windows",
+  ]
   pruneopts = "UT"
-  revision = "092cba3727bb9b4a2f0e922cd6c0f93ea270e363"
-  version = "v1.13.1"
+  revision = "e3c03d172eda2a3a5dc3080825e9eeb08b42f956"
 
 [[projects]]
   digest = "1:b6b5c3e8da0fb8073cd2886ba249a40f4402b4391ca6eba905a142cceea97a12"
@@ -196,7 +220,9 @@
     "docker.io/go-docker/api/types",
     "docker.io/go-docker/api/types/container",
     "docker.io/go-docker/api/types/mount",
+    "github.com/docker/docker/pkg/jsonmessage",
     "github.com/docker/docker/pkg/stdcopy",
+    "github.com/docker/docker/pkg/term",
     "github.com/sirupsen/logrus",
     "github.com/spf13/cobra",
     "gopkg.in/yaml.v2",

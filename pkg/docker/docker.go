@@ -6,8 +6,11 @@ import (
 	"docker.io/go-docker/api/types"
 	"docker.io/go-docker/api/types/container"
 	"docker.io/go-docker/api/types/mount"
+	"github.com/docker/docker/pkg/jsonmessage"
+	"github.com/docker/docker/pkg/term"
 	"github.com/leopardslab/Dunner/internal/logger"
 	"io"
+	"os"
 	"path/filepath"
 	"strings"
 )
@@ -38,8 +41,15 @@ func (step Step) Do() (*io.ReadCloser, error) {
 		log.Fatal(err)
 	}
 
-	_, err = cli.ImagePull(ctx, step.Image, types.ImagePullOptions{})
+	out, err := cli.ImagePull(ctx, step.Image, types.ImagePullOptions{})
 	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer out.Close()
+
+	termFd, isTerm := term.GetFdInfo(os.Stdout)
+	if err = jsonmessage.DisplayJSONMessagesStream(out, os.Stdout, termFd, isTerm, nil); err != nil {
 		log.Fatal(err)
 	}
 
@@ -82,7 +92,7 @@ func (step Step) Do() (*io.ReadCloser, error) {
 	case <-statusCh:
 	}
 
-	out, err := cli.ContainerLogs(ctx, resp.ID, types.ContainerLogsOptions{
+	out, err = cli.ContainerLogs(ctx, resp.ID, types.ContainerLogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
 	})

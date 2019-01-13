@@ -5,9 +5,7 @@ go:
   - master
 
 env:
-  global:
-    - DEP_VERSION="0.5.0"
-    - NODE_TEST_IMAGE_VERSION="10.15.0"
+  - DEP_VERSION="0.5.0"
 
 services:
   - docker
@@ -15,8 +13,6 @@ services:
 before_install:
   - curl -L -s https://github.com/golang/dep/releases/download/v${DEP_VERSION}/dep-linux-amd64 -o $GOPATH/bin/dep
   - chmod +x $GOPATH/bin/dep
-
-  - docker pull node:${NODE_TEST_IMAGE_VERSION}
 
 install:
   - dep ensure -v

@@ -37,6 +37,10 @@ func Do(_ *cobra.Command, args []string) {
 		if err != nil {
 			log.Fatal(err)
 		}
+
+		if err = (*pout).Close(); err != nil {
+			log.Fatal(err)
+		}
 	}
 
 }
