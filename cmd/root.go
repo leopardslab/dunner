@@ -1,11 +1,14 @@
 package cmd
 
 import (
-	"fmt"
-	"os"
-	"github.com/spf13/cobra"
 	"docker.io/go-docker"
+	"fmt"
+	"github.com/leopardslab/Dunner/internal/logger"
+	"github.com/spf13/cobra"
+	"os"
 )
+
+var log = logger.Log
 
 var rootCmd = &cobra.Command{
 	Use:   "dunner",
@@ -15,7 +18,7 @@ var rootCmd = &cobra.Command{
 
 		_, err := docker.NewEnvClient()
 		if err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
 
 		fmt.Println("Dunner running!")
@@ -24,7 +27,7 @@ var rootCmd = &cobra.Command{
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 		os.Exit(1)
 	}
 }

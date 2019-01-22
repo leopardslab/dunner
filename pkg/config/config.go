@@ -1,13 +1,15 @@
-package ConfigService
+package config
 
 import (
-	"log"
-	"io/ioutil"
+	"github.com/leopardslab/Dunner/internal/logger"
 	"gopkg.in/yaml.v2"
+	"io/ioutil"
 )
 
+var log = logger.Log
+
 type Task struct {
-	Name   string    `yaml:"name"`
+	Name    string    `yaml:"name"`
 	Image   string    `yaml:"image"`
 	Command [] string `yaml:"command"`
 }
@@ -16,9 +18,8 @@ type Configs struct {
 	Tasks map[string][]Task
 }
 
-func GetConfigs() Configs {
-	// TODO Should get the name of the Dunner file from a Constant
-	fileContents, err := ioutil.ReadFile("./.dunner.yaml")
+func GetConfigs(filename string) (*Configs, error) {
+	fileContents, err := ioutil.ReadFile(filename)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -28,5 +29,5 @@ func GetConfigs() Configs {
 		log.Fatal(err)
 	}
 
-	return configs
+	return &configs, nil
 }
