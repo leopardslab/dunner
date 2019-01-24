@@ -10,9 +10,11 @@ import (
 	"github.com/docker/docker/pkg/term"
 	"github.com/leopardslab/Dunner/internal/logger"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 )
 
 var log = logger.Log
@@ -38,18 +40,6 @@ func (step Step) Do() (*io.ReadCloser, error) {
 	ctx := context.Background()
 	cli, err := docker.NewEnvClient()
 	if err != nil {
-		log.Fatal(err)
-	}
-
-	out, err := cli.ImagePull(ctx, step.Image, types.ImagePullOptions{})
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer out.Close()
-
-	termFd, isTerm := term.GetFdInfo(os.Stdout)
-	if err = jsonmessage.DisplayJSONMessagesStream(out, os.Stdout, termFd, isTerm, nil); err != nil {
 		log.Fatal(err)
 	}
 
@@ -92,7 +82,7 @@ func (step Step) Do() (*io.ReadCloser, error) {
 	case <-statusCh:
 	}
 
-	out, err = cli.ContainerLogs(ctx, resp.ID, types.ContainerLogsOptions{
+	out, err := cli.ContainerLogs(ctx, resp.ID, types.ContainerLogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
 	})
@@ -103,4 +93,43 @@ func (step Step) Do() (*io.ReadCloser, error) {
 	log.Infof("Running task '%+v' on '%+v' Docker with command '%+v'", step.Task, step.Image, strings.Join(step.Command, " "))
 	return &out, nil
 
+}
+
+func PullImages(images *[]string) error {
+
+	ctx := context.Background()
+	cli, err := docker.NewEnvClient()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var wg sync.WaitGroup
+
+	for _, image := range *images {
+		wg.Add(1)
+
+		go func(image string) {
+
+			defer wg.Done()
+			log.Infof("Pulling image '%s'", image)
+
+			out, err := cli.ImagePull(ctx, image, types.ImagePullOptions{})
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			termFd, isTerm := term.GetFdInfo(os.Stdout)
+			if err = jsonmessage.DisplayJSONMessagesStream(out, ioutil.Discard, termFd, isTerm, nil); err != nil {
+				log.Fatal(err)
+			}
+
+			if err = out.Close(); err != nil {
+				log.Fatal(err)
+			}
+		}(image)
+	}
+	wg.Wait()
+	log.Info("Pull complete\n\n")
+
+	return nil
 }
