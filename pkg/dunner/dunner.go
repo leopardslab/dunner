@@ -21,6 +21,11 @@ func Do(_ *cobra.Command, args []string) {
 		log.Fatal(err)
 	}
 
+	images, err := configs.GetAllImages()
+	if err = docker.PullImages(&images); err != nil {
+		log.Fatal(err)
+	}
+
 	for _, stepDefinition := range configs.Tasks[args[0]] {
 		step := docker.Step{
 			Task:    args[0],
