@@ -31,3 +31,19 @@ func GetConfigs(filename string) (*Configs, error) {
 
 	return &configs, nil
 }
+
+func (c *Configs) GetAllImages() ([] string, error) {
+	var images []string
+	var set = make(map[string]bool)
+
+	for _, tasks := range c.Tasks {
+		for _, task := range tasks {
+			set[task.Image] = true
+		}
+	}
+
+	for img := range set {
+		images = append(images, img)
+	}
+	return images, nil
+}
