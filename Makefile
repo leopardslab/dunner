@@ -4,16 +4,14 @@ GOCMD=go
 GOINSTALL=$(GOCMD) install
 GOTEST=$(GOCMD) test
 DEP=dep 
-.PHONY : all dep install test
+.PHONY : all install test
 
 all : def
 
 def :
 	@$(GOINSTALL) -ldflags '-s'
 
-install: dep
-
-dep:
+install: 
 	@$(DEP) ensure
 
 test:
