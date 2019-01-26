@@ -1,16 +1,23 @@
 #Go parameters
+
 GOCMD=go
 GOINSTALL=$(GOCMD) install
 GOTEST=$(GOCMD) test
 DEP=dep 
+.PHONY : all dep install test
 
-all : dep install
+all : def
+
+def :
+	@$(GOINSTALL) -ldflags '-s'
+
+install: dep
 
 dep:
 	@$(DEP) ensure
 
-install:
-	@$(GOINSTALL) -ldflags '-s'
-
 test:
 	@$(GOTEST) -v ./...
+
+clean:
+	rm -rf *
