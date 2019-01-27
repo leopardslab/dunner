@@ -5,11 +5,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type Config struct {
-	Image   string    `yaml:"image"`
-	Command [] string `yaml:"command"`
-}
-
 func init() {
 	rootCmd.AddCommand(doCmd)
 }
