@@ -1,19 +1,22 @@
 package dunner
 
 import (
+	"os"
+
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/leopardslab/Dunner/internal/logger"
 	"github.com/leopardslab/Dunner/pkg/config"
 	"github.com/leopardslab/Dunner/pkg/docker"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var log = logger.Log
 
+// Do method is invoked for command-line use
 func Do(_ *cobra.Command, args []string) {
 
-	// TODO Should get the name of the Dunner file from a constant or an environment variable or config file
+	// TODO Should get the name of the Dunner file
+	// from a constant or an environment variable or config file
 	var dunnerFile = ".dunner.yaml"
 
 	configs, err := config.GetConfigs(dunnerFile)
@@ -33,7 +36,7 @@ func Do(_ *cobra.Command, args []string) {
 			Image:   stepDefinition.Image,
 			Command: stepDefinition.Command,
 		}
-		pout, err := step.Do()
+		pout, err := step.Exec()
 		if err != nil {
 			log.Fatal(err)
 		}

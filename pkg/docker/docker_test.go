@@ -24,7 +24,7 @@ func TestStep_Do(t *testing.T) {
 		t.Error(err)
 	}
 
-	pout, err := step.Do()
+	pout, err := step.Exec()
 	if err != nil {
 		t.Error(err)
 	}
