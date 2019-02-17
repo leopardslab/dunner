@@ -19,10 +19,6 @@ func TestStep_Do(t *testing.T) {
 		WorkDir: "test",
 		Volumes: nil,
 	}
-	images := []string{step.Image}
-	if err := PullImages(&images); err != nil {
-		t.Error(err)
-	}
 
 	pout, err := step.Exec()
 	if err != nil {
