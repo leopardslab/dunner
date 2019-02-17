@@ -10,17 +10,16 @@ import (
 	"github.com/leopardslab/Dunner/pkg/config"
 	"github.com/leopardslab/Dunner/pkg/docker"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var log = logger.Log
 
 // Do method is invoked for command-line use
 func Do(_ *cobra.Command, args []string) {
-	const async = false
+	var async = viper.GetBool("Async")
 
-	// TODO Should get the name of the Dunner file
-	// from a constant or an environment variable or config file
-	var dunnerFile = ".dunner.yaml"
+	var dunnerFile = viper.GetString("DunnerTaskFile")
 
 	configs, err := config.GetConfigs(dunnerFile)
 	if err != nil {
@@ -49,7 +48,7 @@ func Do(_ *cobra.Command, args []string) {
 }
 
 func process(s *docker.Step, wg *sync.WaitGroup) {
-	const async = false
+	var async = viper.GetBool("Async")
 	if async {
 		defer wg.Done()
 	}
