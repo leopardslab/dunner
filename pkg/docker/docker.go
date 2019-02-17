@@ -14,6 +14,7 @@ import (
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/docker/docker/pkg/term"
 	"github.com/leopardslab/Dunner/internal/logger"
+	"github.com/spf13/viper"
 )
 
 var log = logger.Log
@@ -57,7 +58,7 @@ func (step Step) Exec() (*io.ReadCloser, error) {
 	}
 
 	termFd, isTerm := term.GetFdInfo(os.Stdout)
-	const verbose = false
+	var verbose = viper.GetBool("Verbose")
 	if verbose {
 		if err = jsonmessage.DisplayJSONMessagesStream(out, os.Stdout, termFd, isTerm, nil); err != nil {
 			log.Fatal(err)
