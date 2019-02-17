@@ -19,6 +19,11 @@ var log = logger.Log
 func Do(_ *cobra.Command, args []string) {
 	var async = viper.GetBool("Async")
 
+	if verbose := viper.GetBool("Verbose"); async && verbose {
+		log.Warn("Silencing verbose in asynchronous mode")
+		viper.Set("Verbose", false)
+	}
+
 	var dunnerFile = viper.GetString("DunnerTaskFile")
 
 	configs, err := config.GetConfigs(dunnerFile)

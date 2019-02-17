@@ -7,6 +7,7 @@ import (
 	docker "docker.io/go-docker"
 	"github.com/leopardslab/Dunner/internal/logger"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var log = logger.Log
@@ -24,6 +25,25 @@ var rootCmd = &cobra.Command{
 
 		fmt.Println("Dunner running!")
 	},
+}
+
+func init() {
+
+	// Verbose Mode
+	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "Verbose mode")
+	if err := viper.BindPFlag("Verbose", rootCmd.PersistentFlags().Lookup("verbose")); err != nil {
+		log.Fatal(err)
+	}
+
+	// Dunner task file
+	rootCmd.PersistentFlags().StringP("task-file", "t", ".dunner.yaml", "Task file to be run")
+	if err := rootCmd.MarkPersistentFlagFilename("task-file", "yaml", "yml"); err != nil {
+		log.Fatal(err)
+	}
+	if err := viper.BindPFlag("DunnerTaskFile", rootCmd.PersistentFlags().Lookup("task-file")); err != nil {
+		log.Fatal(err)
+	}
+
 }
 
 // Execute method executes the 'Run' method of rootCmd.
