@@ -4,8 +4,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-// Initialize sets default configuration for the project
-func Initialize() {
+func init() {
 	// Settings file
 	viper.SetConfigName("settings")
 	viper.SetConfigType("yaml")
@@ -26,4 +25,7 @@ func Initialize() {
 	// Modes
 	viper.SetDefault("Async", false)
 	viper.SetDefault("Verbose", false)
+
+	// Constants
+	viper.SetDefault("DockerAPIVersion", "1.39")
 }

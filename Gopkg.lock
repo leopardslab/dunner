@@ -2,32 +2,6 @@
 
 
 [[projects]]
-  digest = "1:8c08dabeec001da3389028236a924397b9e11d4c519439d0135db44f9f21cb0f"
-  name = "docker.io/go-docker"
-  packages = [
-    ".",
-    "api",
-    "api/types",
-    "api/types/blkiodev",
-    "api/types/container",
-    "api/types/events",
-    "api/types/filters",
-    "api/types/image",
-    "api/types/mount",
-    "api/types/network",
-    "api/types/registry",
-    "api/types/strslice",
-    "api/types/swarm",
-    "api/types/swarm/runtime",
-    "api/types/time",
-    "api/types/versions",
-    "api/types/volume",
-  ]
-  pruneopts = "UT"
-  revision = "b3f5b5de7bbce0acc6a7fc0a4c2b88db678e262e"
-  version = "v1.0.0"
-
-[[projects]]
   branch = "master"
   digest = "1:6da51e5ec493ad2b44cb04129e2d0a068c8fb9bd6cb5739d199573558696bb94"
   name = "github.com/Azure/go-ansiterm"
@@ -66,9 +40,27 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:a2a7b6b4af8ed07209d72648405e66cadd24e10633eb79916abd219f334d1bd8"
+  digest = "1:3c9913ecae011df5973403b3522bcc47593b312d32595a376fb361c7408d946b"
   name = "github.com/docker/docker"
   packages = [
+    "api",
+    "api/types",
+    "api/types/blkiodev",
+    "api/types/container",
+    "api/types/events",
+    "api/types/filters",
+    "api/types/image",
+    "api/types/mount",
+    "api/types/network",
+    "api/types/registry",
+    "api/types/strslice",
+    "api/types/swarm",
+    "api/types/swarm/runtime",
+    "api/types/time",
+    "api/types/versions",
+    "api/types/volume",
+    "client",
+    "errdefs",
     "pkg/jsonmessage",
     "pkg/stdcopy",
     "pkg/term",
@@ -268,11 +260,9 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:3866deb325971ae774d5844b70f058923b7757cd2eec6db2bd6d028143f6b65f"
+  digest = "1:3fa70ba3ba75f47646d2a6ff518f46f3c4a215912eb6f9c26b6e956918038f01"
   name = "golang.org/x/net"
   packages = [
-    "context",
-    "context/ctxhttp",
     "internal/socks",
     "proxy",
   ]
@@ -317,10 +307,10 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "docker.io/go-docker",
-    "docker.io/go-docker/api/types",
-    "docker.io/go-docker/api/types/container",
-    "docker.io/go-docker/api/types/mount",
+    "github.com/docker/docker/api/types",
+    "github.com/docker/docker/api/types/container",
+    "github.com/docker/docker/api/types/mount",
+    "github.com/docker/docker/client",
     "github.com/docker/docker/pkg/jsonmessage",
     "github.com/docker/docker/pkg/stdcopy",
     "github.com/docker/docker/pkg/term",

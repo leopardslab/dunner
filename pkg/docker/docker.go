@@ -7,10 +7,10 @@ import (
 	"os"
 	"path/filepath"
 
-	docker "docker.io/go-docker"
-	"docker.io/go-docker/api/types"
-	"docker.io/go-docker/api/types/container"
-	"docker.io/go-docker/api/types/mount"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/mount"
+	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/docker/docker/pkg/term"
 	"github.com/leopardslab/Dunner/internal/logger"
@@ -40,7 +40,10 @@ func (step Step) Exec() (*io.ReadCloser, error) {
 	)
 
 	ctx := context.Background()
-	cli, err := docker.NewEnvClient()
+	cli, err := client.NewClientWithOpts(
+		client.FromEnv,
+		client.WithVersion(viper.GetString("DockerAPIVersion")),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
