@@ -18,8 +18,9 @@ func init() {
 }
 
 var doCmd = &cobra.Command{
-	Use:   "do",
+	Use:   "do [taskName]",
 	Short: "Do whatever you say",
 	Long:  `You can run any task defined on the '.dunner.yaml' with this command`,
 	Run:   dunner.Do,
+	Args:  cobra.ExactArgs(1),
 }
