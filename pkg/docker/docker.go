@@ -2,32 +2,36 @@ package docker
 
 import (
 	"context"
-	"docker.io/go-docker"
+	"io"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+
+	docker "docker.io/go-docker"
 	"docker.io/go-docker/api/types"
 	"docker.io/go-docker/api/types/container"
 	"docker.io/go-docker/api/types/mount"
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/docker/docker/pkg/term"
 	"github.com/leopardslab/Dunner/internal/logger"
-	"io"
-	"os"
-	"path/filepath"
-	"strings"
+	"github.com/spf13/viper"
 )
 
 var log = logger.Log
 
+// Step describes the information required to run one task in docker container
 type Step struct {
 	Task    string
 	Name    string
 	Image   string
-	Command [] string
+	Command []string
 	Env     map[string]string
 	WorkDir string
 	Volumes map[string]string
 }
 
-func (step Step) Do() (*io.ReadCloser, error) {
+// Exec method is used to execute the task described in the corresponding step
+func (step Step) Exec() (*io.ReadCloser, error) {
 
 	var (
 		hostMountFilepath   = "./"
@@ -41,23 +45,33 @@ func (step Step) Do() (*io.ReadCloser, error) {
 		log.Fatal(err)
 	}
 
-	out, err := cli.ImagePull(ctx, step.Image, types.ImagePullOptions{})
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer out.Close()
-
-	termFd, isTerm := term.GetFdInfo(os.Stdout)
-	if err = jsonmessage.DisplayJSONMessagesStream(out, os.Stdout, termFd, isTerm, nil); err != nil {
-		log.Fatal(err)
-	}
-
 	path, err := filepath.Abs(hostMountFilepath)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	log.Infof("Pulling an image: '%s'", step.Image)
+
+	out, err := cli.ImagePull(ctx, step.Image, types.ImagePullOptions{})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	termFd, isTerm := term.GetFdInfo(os.Stdout)
+	var verbose = viper.GetBool("Verbose")
+	if verbose {
+		if err = jsonmessage.DisplayJSONMessagesStream(out, os.Stdout, termFd, isTerm, nil); err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		if err = jsonmessage.DisplayJSONMessagesStream(out, ioutil.Discard, termFd, isTerm, nil); err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	if err = out.Close(); err != nil {
+		log.Fatal(err)
+	}
 	resp, err := cli.ContainerCreate(
 		ctx,
 		&container.Config{
@@ -79,13 +93,13 @@ func (step Step) Do() (*io.ReadCloser, error) {
 		log.Fatal(err)
 	}
 
-	if err := cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
+	if err = cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
 		log.Fatal(err)
 	}
 
 	statusCh, errCh := cli.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
 	select {
-	case err := <-errCh:
+	case err = <-errCh:
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -100,7 +114,6 @@ func (step Step) Do() (*io.ReadCloser, error) {
 		log.Fatal(err)
 	}
 
-	log.Infof("Running task '%+v' on '%+v' Docker with command '%+v'", step.Task, step.Image, strings.Join(step.Command, " "))
 	return &out, nil
 
 }
