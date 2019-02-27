@@ -14,6 +14,7 @@ type Task struct {
 	Name    string   `yaml:"name"`
 	Image   string   `yaml:"image"`
 	Command []string `yaml:"command"`
+	Envs    []string `yaml:"envs"`
 }
 
 // Configs describes the parsed information from the dunner file
@@ -34,21 +35,4 @@ func GetConfigs(filename string) (*Configs, error) {
 	}
 
 	return &configs, nil
-}
-
-// GetAllImages extracts a set of images required for all the tasks to run
-func (c *Configs) GetAllImages() ([]string, error) {
-	var images []string
-	var set = make(map[string]bool)
-
-	for _, tasks := range c.Tasks {
-		for _, task := range tasks {
-			set[task.Image] = true
-		}
-	}
-
-	for img := range set {
-		images = append(images, img)
-	}
-	return images, nil
 }

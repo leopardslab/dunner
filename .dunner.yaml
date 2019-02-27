@@ -9,3 +9,8 @@ build:
     command: ["npm", "--version"]
   - image: alpine
     command: ["apk", "update"]
+  - image: alpine
+    command: ["printenv"]
+    envs:
+      - MYVAR=121
+      - MYVAR2=dunner

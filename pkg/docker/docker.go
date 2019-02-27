@@ -25,7 +25,7 @@ type Step struct {
 	Name    string
 	Image   string
 	Command []string
-	Env     map[string]string
+	Env     []string
 	WorkDir string
 	Volumes map[string]string
 }
@@ -80,6 +80,7 @@ func (step Step) Exec() (*io.ReadCloser, error) {
 		&container.Config{
 			Image:      step.Image,
 			Cmd:        step.Command,
+			Env:        step.Env,
 			WorkingDir: containerWorkingDir,
 		},
 		&container.HostConfig{

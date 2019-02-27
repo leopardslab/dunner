@@ -41,6 +41,7 @@ func Do(_ *cobra.Command, args []string) {
 			Name:    stepDefinition.Name,
 			Image:   stepDefinition.Image,
 			Command: stepDefinition.Command,
+			Env:     stepDefinition.Envs,
 		}
 		if async {
 			go process(&step, &wg)

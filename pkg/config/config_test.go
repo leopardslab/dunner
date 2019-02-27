@@ -45,11 +45,6 @@ func TestGetConfigs(t *testing.T) {
 		Tasks: tasks,
 	}
 
-	imgs, _ := expected.GetAllImages()
-	if !reflect.DeepEqual([]string{task.Image}, imgs) {
-		t.Fatalf("Images list not equal to expected")
-	}
-
 	if !reflect.DeepEqual(expected, *pout) {
 		t.Fatalf("Output not equal to expected")
 	}
