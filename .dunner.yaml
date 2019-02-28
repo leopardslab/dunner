@@ -12,5 +12,6 @@ build:
   - image: alpine
     command: ["printenv"]
     envs:
-      - MYVAR=121
-      - MYVAR2=dunner
+      - PERM=775
+      - ID=dunner
+      - DIR=`$HOME`
