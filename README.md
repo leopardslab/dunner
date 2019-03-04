@@ -9,11 +9,11 @@ Example `.dunner.yaml`
 
 ```yaml
 deploy:
-- name: 'emeraldsquad/sonar-scanner'
+- image: 'emeraldsquad/sonar-scanner'
   command: ['sonar', 'scan']
-- name: 'golang'
+- image: 'golang'
   command: ['go', 'install']
-- name: 'mesosphere/aws-cli'
+- image: 'mesosphere/aws-cli'
   command: ['aws', 'elasticbeanstalk update-application --application-name myapp']
   envs: 
    - AWS_ACCESS_KEY_ID=`$AWS_KEY`
@@ -22,7 +22,7 @@ deploy:
 - name: '@status' #This refers to another task and can pass args too
   args: 'prod'
 status:
-- name: 'mesosphere/aws-cli'
+- image: 'mesosphere/aws-cli'
   command: ['aws', 'elasticbeanstalk describe-events --environment-name $1'] 
   # This uses args passed to the task, `$1` means first arg
   envs: 
