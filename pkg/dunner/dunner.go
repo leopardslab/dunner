@@ -2,6 +2,8 @@ package dunner
 
 import (
 	"os"
+	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -50,19 +52,23 @@ func Do(_ *cobra.Command, args []string) {
 		}
 
 		if async {
-			go process(&step, &wg)
+			go process(&step, &wg, args[1:])
 		} else {
-			process(&step, &wg)
+			process(&step, &wg, args[1:])
 		}
 	}
 
 	wg.Wait()
 }
 
-func process(s *docker.Step, wg *sync.WaitGroup) {
+func process(s *docker.Step, wg *sync.WaitGroup, args []string) {
 	var async = viper.GetBool("Async")
 	if async {
 		defer wg.Done()
+	}
+
+	if err := passArgs(s, &args); err != nil {
+		log.Fatal(err)
 	}
 
 	pout, err := (*s).Exec()
@@ -84,4 +90,19 @@ func process(s *docker.Step, wg *sync.WaitGroup) {
 	if err = (*pout).Close(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func passArgs(s *docker.Step, args *[]string) error {
+	for i, subStr := range s.Command {
+		regex := regexp.MustCompile(`\$[1-9][0-9]*`)
+		subStr = regex.ReplaceAllStringFunc(subStr, func(str string) string {
+			j, err := strconv.Atoi(strings.Trim(str, "$"))
+			if err != nil {
+				log.Fatal(err)
+			}
+			return (*args)[j-1]
+		})
+		s.Command[i] = subStr
+	}
+	return nil
 }
