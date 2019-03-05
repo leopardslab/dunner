@@ -43,6 +43,11 @@ func Do(_ *cobra.Command, args []string) {
 			Command: stepDefinition.Command,
 			Env:     stepDefinition.Envs,
 		}
+
+		if err := config.DecodeMount(stepDefinition.Mounts, &step); err != nil {
+			log.Fatal(err)
+		}
+
 		if async {
 			go process(&step, &wg)
 		} else {

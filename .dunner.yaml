@@ -1,8 +1,4 @@
 build:
-  - image: node
-    command: ["node", "--version"]
-  - image: node
-    command: ["npm", "--version"]
   - image: node:10.15.0
     command: ["node", "--version"]
   - image: node:10.15.0
@@ -15,3 +11,9 @@ build:
       - PERM=775
       - ID=dunner
       - DIR=`$HOME`
+  - image: alpine
+    command: ["ls", "/root"]
+    mounts:
+      - '~/Downloads:/root/down'
+      - ~/Pictures:/root/pics:wr
+      - "~/Documents:/root/docs:r"

@@ -4,16 +4,26 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 
+	"github.com/docker/docker/api/types/mount"
 	"github.com/joho/godotenv"
 	"github.com/leopardslab/Dunner/internal/logger"
+	"github.com/leopardslab/Dunner/pkg/docker"
 	"github.com/spf13/viper"
 	yaml "gopkg.in/yaml.v2"
 )
 
 var log = logger.Log
+
+type DirMount struct {
+	Src      string `yaml:"src"`
+	Dest     string `yaml:"dest"`
+	ReadOnly bool   `yaml:"read-only"`
+}
 
 // Task describes a single task to be run in a docker container
 type Task struct {
@@ -21,6 +31,7 @@ type Task struct {
 	Image   string   `yaml:"image"`
 	Command []string `yaml:"command"`
 	Envs    []string `yaml:"envs"`
+	Mounts  []string `yaml:"mounts"`
 }
 
 // Configs describes the parsed information from the dunner file
@@ -103,4 +114,52 @@ func parseEnv(configs *Configs) error {
 	}
 
 	return nil
+}
+
+// DecodeMount parses mount format for directories to be mounted as bind volumes
+func DecodeMount(mounts []string, step *docker.Step) error {
+	for _, m := range mounts {
+
+		arr := strings.Split(
+			strings.Trim(strings.Trim(m, `'`), `"`),
+			":",
+		)
+		if len(arr) != 3 && len(arr) != 2 {
+			return fmt.Errorf(
+				`config: invalid format for mount %s`,
+				m,
+			)
+		}
+		var readOnly = true
+		if len(arr) == 3 {
+			if arr[2] == "wr" || arr[2] == "w" {
+				readOnly = false
+			} else if arr[2] != "r" {
+				return fmt.Errorf(
+					`config: invalid format of read-write mode for mount '%s'`,
+					m,
+				)
+			}
+		}
+		src, err := filepath.Abs(joinPathRelToHome(arr[0]))
+		if err != nil {
+			log.Fatal(err)
+		}
+		dest := arr[1]
+
+		(*step).ExtMounts = append((*step).ExtMounts, mount.Mount{
+			Type:     mount.TypeBind,
+			Source:   src,
+			Target:   dest,
+			ReadOnly: readOnly,
+		})
+	}
+	return nil
+}
+
+func joinPathRelToHome(p string) string {
+	if p[0] == '~' {
+		return path.Join(os.Getenv("HOME"), strings.Trim(p, "~"))
+	}
+	return p
 }
