@@ -8,7 +8,7 @@ func init() {
 	// Settings file
 	viper.SetConfigName("settings")
 	viper.SetConfigType("yaml")
-	viper.AddConfigPath("../../")
+	viper.AddConfigPath(".")
 	viper.AddConfigPath("$HOME/.dunner/")
 	viper.AddConfigPath("/etc/dunner/")
 	// TODO Add standard configuration paths for Windows OS
@@ -19,6 +19,7 @@ func init() {
 
 	// Files
 	viper.SetDefault("DunnerTaskFile", ".dunner.yaml")
+	viper.SetDefault("DotenvFile", ".env")
 	viper.SetDefault("GlobalLogFile", "/var/log/dunner/logs/")
 	viper.SetDefault("LocalLogFile", nil)
 

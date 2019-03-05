@@ -10,9 +10,12 @@ import (
 func TestGetConfigs(t *testing.T) {
 	var tmpFilename = ".testdunner.yaml"
 
-	var content = []byte(`test:
-    - image: node
-      command: ["node", "--version"]`)
+	var content = []byte(`
+test:
+  - image: node
+    command: ["node", "--version"]
+    envs:
+      - MYVAR=MYVAL`)
 
 	tmpFile, err := ioutil.TempFile("", tmpFilename)
 	if err != nil {
@@ -38,6 +41,7 @@ func TestGetConfigs(t *testing.T) {
 		Name:    "",
 		Image:   "node",
 		Command: []string{"node", "--version"},
+		Envs:    []string{"MYVAR=MYVAL"},
 	}
 	var tasks = make(map[string][]Task)
 	tasks["test"] = []Task{task}
@@ -45,13 +49,8 @@ func TestGetConfigs(t *testing.T) {
 		Tasks: tasks,
 	}
 
-	imgs, _ := expected.GetAllImages()
-	if !reflect.DeepEqual([]string{task.Image}, imgs) {
-		t.Fatalf("Images list not equal to expected")
-	}
-
 	if !reflect.DeepEqual(expected, *pout) {
-		t.Fatalf("Output not equal to expected")
+		t.Fatalf("Output not equal to expected; %v != %v", expected, *pout)
 	}
 
 }

@@ -9,3 +9,9 @@ build:
     command: ["npm", "--version"]
   - image: alpine
     command: ["apk", "update"]
+  - image: alpine
+    command: ["printenv"]
+    envs:
+      - PERM=775
+      - ID=dunner
+      - DIR=`$HOME`
