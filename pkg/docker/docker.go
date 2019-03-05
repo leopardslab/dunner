@@ -21,13 +21,14 @@ var log = logger.Log
 
 // Step describes the information required to run one task in docker container
 type Step struct {
-	Task    string
-	Name    string
-	Image   string
-	Command []string
-	Env     []string
-	WorkDir string
-	Volumes map[string]string
+	Task      string
+	Name      string
+	Image     string
+	Command   []string
+	Env       []string
+	WorkDir   string
+	Volumes   map[string]string
+	ExtMounts []mount.Mount
 }
 
 // Exec method is used to execute the task described in the corresponding step
@@ -84,13 +85,11 @@ func (step Step) Exec() (*io.ReadCloser, error) {
 			WorkingDir: containerWorkingDir,
 		},
 		&container.HostConfig{
-			Mounts: []mount.Mount{
-				{
-					Type:   mount.TypeBind,
-					Source: path,
-					Target: hostMountTarget,
-				},
-			},
+			Mounts: append(step.ExtMounts, mount.Mount{
+				Type:   mount.TypeBind,
+				Source: path,
+				Target: hostMountTarget,
+			}),
 		},
 		nil, "")
 	if err != nil {
