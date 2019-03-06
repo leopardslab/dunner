@@ -29,6 +29,7 @@ type DirMount struct {
 type Task struct {
 	Name    string   `yaml:"name"`
 	Image   string   `yaml:"image"`
+	SubDir  string   `yaml:"dir"`
 	Command []string `yaml:"command"`
 	Envs    []string `yaml:"envs"`
 	Mounts  []string `yaml:"mounts"`

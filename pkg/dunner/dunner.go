@@ -42,6 +42,7 @@ func Do(_ *cobra.Command, args []string) {
 			Image:   stepDefinition.Image,
 			Command: stepDefinition.Command,
 			Env:     stepDefinition.Envs,
+			WorkDir: stepDefinition.SubDir,
 		}
 
 		if err := config.DecodeMount(stepDefinition.Mounts, &step); err != nil {
