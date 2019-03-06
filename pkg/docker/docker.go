@@ -29,6 +29,7 @@ type Step struct {
 	WorkDir   string
 	Volumes   map[string]string
 	ExtMounts []mount.Mount
+	Args      []string
 }
 
 // Exec method is used to execute the task described in the corresponding step

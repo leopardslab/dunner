@@ -33,18 +33,24 @@ func Do(_ *cobra.Command, args []string) {
 		log.Fatal(err)
 	}
 
+	execTask(configs, args[0], args[1:])
+}
+
+func execTask(configs *config.Configs, taskName string, args []string) {
+	var async = viper.GetBool("Async")
 	var wg sync.WaitGroup
-	for _, stepDefinition := range configs.Tasks[args[0]] {
+	for _, stepDefinition := range configs.Tasks[taskName] {
 		if async {
 			wg.Add(1)
 		}
 		step := docker.Step{
-			Task:    args[0],
+			Task:    taskName,
 			Name:    stepDefinition.Name,
 			Image:   stepDefinition.Image,
 			Command: stepDefinition.Command,
 			Env:     stepDefinition.Envs,
 			WorkDir: stepDefinition.SubDir,
+			Args:    stepDefinition.Args,
 		}
 
 		if err := config.DecodeMount(stepDefinition.Mounts, &step); err != nil {
@@ -52,23 +58,41 @@ func Do(_ *cobra.Command, args []string) {
 		}
 
 		if async {
-			go process(&step, &wg, args[1:])
+			go process(configs, &step, &wg, args)
 		} else {
-			process(&step, &wg, args[1:])
+			process(configs, &step, &wg, args)
 		}
 	}
 
 	wg.Wait()
 }
 
-func process(s *docker.Step, wg *sync.WaitGroup, args []string) {
+func process(configs *config.Configs, s *docker.Step, wg *sync.WaitGroup, args []string) {
 	var async = viper.GetBool("Async")
 	if async {
 		defer wg.Done()
 	}
 
+	if newTask := regexp.MustCompile(`^@\w+$`).FindString(s.Name); newTask != "" {
+		newTask = strings.Trim(newTask, "@")
+		if async {
+			wg.Add(1)
+			go func(wg *sync.WaitGroup) {
+				execTask(configs, newTask, s.Args)
+				wg.Done()
+			}(wg)
+		} else {
+			execTask(configs, newTask, s.Args)
+		}
+		return
+	}
+
 	if err := passArgs(s, &args); err != nil {
 		log.Fatal(err)
+	}
+
+	if s.Image == "" {
+		log.Fatalf(`dunner: image repository name cannot be empty`)
 	}
 
 	pout, err := (*s).Exec()
