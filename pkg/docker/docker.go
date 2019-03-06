@@ -81,7 +81,6 @@ func (step Step) Exec() (*io.ReadCloser, error) {
 	if step.WorkDir != "" {
 		containerWorkingDir = filepath.Join(hostMountTarget, step.WorkDir)
 	}
-	log.Debug(containerWorkingDir)
 
 	resp, err := cli.ContainerCreate(
 		ctx,

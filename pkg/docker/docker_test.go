@@ -16,7 +16,6 @@ func TestStep_Do(t *testing.T) {
 		Image:   "node:" + testNodeVersion,
 		Command: []string{"node", "--version"},
 		Env:     nil,
-		WorkDir: "test",
 		Volumes: nil,
 	}
 
