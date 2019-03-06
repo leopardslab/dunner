@@ -4,6 +4,9 @@ build:
   - image: node:10.15.0
     command: ["npm", "--version"]
   - image: alpine
+    dir: pkg
+    command: ["pwd"]
+  - image: alpine
     command: ["apk", "update"]
   - image: alpine
     command: ["printenv"]

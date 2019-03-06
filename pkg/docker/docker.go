@@ -35,9 +35,9 @@ type Step struct {
 func (step Step) Exec() (*io.ReadCloser, error) {
 
 	var (
-		hostMountFilepath   = "./"
-		containerWorkingDir = "/dunner"
-		hostMountTarget     = "/dunner"
+		hostMountFilepath          = "./"
+		containerDefaultWorkingDir = "/dunner"
+		hostMountTarget            = "/dunner"
 	)
 
 	ctx := context.Background()
@@ -76,6 +76,13 @@ func (step Step) Exec() (*io.ReadCloser, error) {
 	if err = out.Close(); err != nil {
 		log.Fatal(err)
 	}
+
+	var containerWorkingDir = containerDefaultWorkingDir
+	if step.WorkDir != "" {
+		containerWorkingDir = filepath.Join(hostMountTarget, step.WorkDir)
+	}
+	log.Debug(containerWorkingDir)
+
 	resp, err := cli.ContainerCreate(
 		ctx,
 		&container.Config{
