@@ -14,8 +14,12 @@ build:
       - PERM=775
       - ID=dunner
       - DIR=`$HOME`
+  - name: '@show'
+    args:
+      - '/root'
+show:
   - image: alpine
-    command: ["ls", "/root"]
+    command: ["ls", "$1"]
     mounts:
       - '~/Downloads:/root/down'
       - ~/Pictures:/root/pics:wr

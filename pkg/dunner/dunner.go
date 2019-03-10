@@ -2,6 +2,8 @@ package dunner
 
 import (
 	"os"
+	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -31,18 +33,24 @@ func Do(_ *cobra.Command, args []string) {
 		log.Fatal(err)
 	}
 
+	execTask(configs, args[0], args[1:])
+}
+
+func execTask(configs *config.Configs, taskName string, args []string) {
+	var async = viper.GetBool("Async")
 	var wg sync.WaitGroup
-	for _, stepDefinition := range configs.Tasks[args[0]] {
+	for _, stepDefinition := range configs.Tasks[taskName] {
 		if async {
 			wg.Add(1)
 		}
 		step := docker.Step{
-			Task:    args[0],
+			Task:    taskName,
 			Name:    stepDefinition.Name,
 			Image:   stepDefinition.Image,
 			Command: stepDefinition.Command,
 			Env:     stepDefinition.Envs,
 			WorkDir: stepDefinition.SubDir,
+			Args:    stepDefinition.Args,
 		}
 
 		if err := config.DecodeMount(stepDefinition.Mounts, &step); err != nil {
@@ -50,19 +58,41 @@ func Do(_ *cobra.Command, args []string) {
 		}
 
 		if async {
-			go process(&step, &wg)
+			go process(configs, &step, &wg, args)
 		} else {
-			process(&step, &wg)
+			process(configs, &step, &wg, args)
 		}
 	}
 
 	wg.Wait()
 }
 
-func process(s *docker.Step, wg *sync.WaitGroup) {
+func process(configs *config.Configs, s *docker.Step, wg *sync.WaitGroup, args []string) {
 	var async = viper.GetBool("Async")
 	if async {
 		defer wg.Done()
+	}
+
+	if newTask := regexp.MustCompile(`^@\w+$`).FindString(s.Name); newTask != "" {
+		newTask = strings.Trim(newTask, "@")
+		if async {
+			wg.Add(1)
+			go func(wg *sync.WaitGroup) {
+				execTask(configs, newTask, s.Args)
+				wg.Done()
+			}(wg)
+		} else {
+			execTask(configs, newTask, s.Args)
+		}
+		return
+	}
+
+	if err := passArgs(s, &args); err != nil {
+		log.Fatal(err)
+	}
+
+	if s.Image == "" {
+		log.Fatalf(`dunner: image repository name cannot be empty`)
 	}
 
 	pout, err := (*s).Exec()
@@ -84,4 +114,19 @@ func process(s *docker.Step, wg *sync.WaitGroup) {
 	if err = (*pout).Close(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func passArgs(s *docker.Step, args *[]string) error {
+	for i, subStr := range s.Command {
+		regex := regexp.MustCompile(`\$[1-9][0-9]*`)
+		subStr = regex.ReplaceAllStringFunc(subStr, func(str string) string {
+			j, err := strconv.Atoi(strings.Trim(str, "$"))
+			if err != nil {
+				log.Fatal(err)
+			}
+			return (*args)[j-1]
+		})
+		s.Command[i] = subStr
+	}
+	return nil
 }
