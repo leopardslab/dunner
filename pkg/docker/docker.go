@@ -2,43 +2,50 @@ package docker
 
 import (
 	"context"
-	"docker.io/go-docker"
-	"docker.io/go-docker/api/types"
-	"docker.io/go-docker/api/types/container"
-	"docker.io/go-docker/api/types/mount"
-	"github.com/leopardslab/Dunner/internal/logger"
 	"io"
+	"io/ioutil"
+	"os"
 	"path/filepath"
-	"strings"
+
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/mount"
+	"github.com/docker/docker/client"
+	"github.com/docker/docker/pkg/jsonmessage"
+	"github.com/docker/docker/pkg/term"
+	"github.com/leopardslab/Dunner/internal/logger"
+	"github.com/spf13/viper"
 )
 
 var log = logger.Log
 
+// Step describes the information required to run one task in docker container
 type Step struct {
-	Task    string
-	Name    string
-	Image   string
-	Command [] string
-	Env     map[string]string
-	WorkDir string
-	Volumes map[string]string
+	Task      string
+	Name      string
+	Image     string
+	Command   []string
+	Env       []string
+	WorkDir   string
+	Volumes   map[string]string
+	ExtMounts []mount.Mount
+	Args      []string
 }
 
-func (step Step) Do() (*io.ReadCloser, error) {
+// Exec method is used to execute the task described in the corresponding step
+func (step Step) Exec() (*io.ReadCloser, error) {
 
 	var (
-		hostMountFilepath   = "./"
-		containerWorkingDir = "/dunner"
-		hostMountTarget     = "/dunner"
+		hostMountFilepath          = "./"
+		containerDefaultWorkingDir = "/dunner"
+		hostMountTarget            = "/dunner"
 	)
 
 	ctx := context.Background()
-	cli, err := docker.NewEnvClient()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	_, err = cli.ImagePull(ctx, step.Image, types.ImagePullOptions{})
+	cli, err := client.NewClientWithOpts(
+		client.FromEnv,
+		client.WithVersion(viper.GetString("DockerAPIVersion")),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -48,41 +55,68 @@ func (step Step) Do() (*io.ReadCloser, error) {
 		log.Fatal(err)
 	}
 
+	log.Infof("Pulling an image: '%s'", step.Image)
+
+	out, err := cli.ImagePull(ctx, step.Image, types.ImagePullOptions{})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	termFd, isTerm := term.GetFdInfo(os.Stdout)
+	var verbose = viper.GetBool("Verbose")
+	if verbose {
+		if err = jsonmessage.DisplayJSONMessagesStream(out, os.Stdout, termFd, isTerm, nil); err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		if err = jsonmessage.DisplayJSONMessagesStream(out, ioutil.Discard, termFd, isTerm, nil); err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	if err = out.Close(); err != nil {
+		log.Fatal(err)
+	}
+
+	var containerWorkingDir = containerDefaultWorkingDir
+	if step.WorkDir != "" {
+		containerWorkingDir = filepath.Join(hostMountTarget, step.WorkDir)
+	}
+
 	resp, err := cli.ContainerCreate(
 		ctx,
 		&container.Config{
 			Image:      step.Image,
 			Cmd:        step.Command,
+			Env:        step.Env,
 			WorkingDir: containerWorkingDir,
 		},
 		&container.HostConfig{
-			Mounts: []mount.Mount{
-				{
-					Type:   mount.TypeBind,
-					Source: path,
-					Target: hostMountTarget,
-				},
-			},
+			Mounts: append(step.ExtMounts, mount.Mount{
+				Type:   mount.TypeBind,
+				Source: path,
+				Target: hostMountTarget,
+			}),
 		},
 		nil, "")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if err := cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
+	if err = cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
 		log.Fatal(err)
 	}
 
 	statusCh, errCh := cli.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
 	select {
-	case err := <-errCh:
+	case err = <-errCh:
 		if err != nil {
 			log.Fatal(err)
 		}
 	case <-statusCh:
 	}
 
-	out, err := cli.ContainerLogs(ctx, resp.ID, types.ContainerLogsOptions{
+	out, err = cli.ContainerLogs(ctx, resp.ID, types.ContainerLogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
 	})
@@ -90,7 +124,6 @@ func (step Step) Do() (*io.ReadCloser, error) {
 		log.Fatal(err)
 	}
 
-	log.Infof("Running task '%+v' on '%+v' Docker with command '%+v'", step.Task, step.Image, strings.Join(step.Command, " "))
 	return &out, nil
 
 }

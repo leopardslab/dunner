@@ -8,7 +8,7 @@ import (
 
 func TestStep_Do(t *testing.T) {
 
-	var testNodeVersion= "10.15.0"
+	var testNodeVersion = "10.15.0"
 
 	step := &Step{
 		Task:    "test",
@@ -16,11 +16,10 @@ func TestStep_Do(t *testing.T) {
 		Image:   "node:" + testNodeVersion,
 		Command: []string{"node", "--version"},
 		Env:     nil,
-		WorkDir: "test",
 		Volumes: nil,
 	}
 
-	pout, err := step.Do()
+	pout, err := step.Exec()
 	if err != nil {
 		t.Error(err)
 	}
@@ -35,5 +34,4 @@ func TestStep_Do(t *testing.T) {
 	if result != testNodeVersion {
 		t.Fatalf("Detected version of node container: '%s'; Expected output: '%s'", result, testNodeVersion)
 	}
-
 }
