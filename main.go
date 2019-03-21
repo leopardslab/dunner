@@ -5,7 +5,7 @@ import (
 	G "github.com/leopardslab/Dunner/pkg/global"
 )
 
-var version string = ""
+var version string
 
 func main() {
 	G.VERSION = version
