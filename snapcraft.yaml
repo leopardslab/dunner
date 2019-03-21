@@ -1,0 +1,21 @@
+name: dunner
+version: git
+summary: A Docker based tas runner tool
+description: |
+  Dunner is a task runner tool like Grunt but used Docker images like CircleCI do. | 
+  You can define tasks and steps of the tasks in your `.dunner.yaml` file and then run these steps with `Dunner do taskname`
+confinement: devmode
+base: core18
+
+parts:
+  dunner:
+    plugin: go
+    go-importpath: github.com/leopardslab/Dunner
+    source: .
+    source-type: git
+    build-packages:
+      - gcc
+
+apps:
+  dunner:
+    command: Dunner

@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"fmt"
-
 	"github.com/spf13/cobra"
+	G "github.com/leopardslab/Dunner/pkg/global"
 )
 
 func init() {
@@ -15,6 +15,6 @@ var versionCmd = &cobra.Command{
 	Short: "Print the version number of Dunner",
 	Long:  `All software has versions. This is Dunners's`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("v1.0.0")
+		fmt.Println(G.VERSION)
 	},
 }
