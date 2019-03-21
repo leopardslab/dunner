@@ -52,15 +52,15 @@ This work is still in progress. See the development plan.
 - [x] Ability to mount other dirs to the task containers
 - [x] Ability to use a task as a step for another task
 - [x] Ability to get ENV, param, etc values from host environment variables or `.env` file
-- [x] Ability to install as a Snap package
-- [x] Ability to install as a Deb package
-- [x] Ability to install as a RPM package
-- [x] Ability to install as a Brew package
+- [ ] Ability to install as a Snap package
+- [ ] Ability to install as a Deb package
+- [ ] Ability to install as a RPM package
+- [ ] Ability to install as a Brew package
 
 ### [`v2.0`](https://github.com/leopardslab/Dunner/milestone/3) 
-- [x] Ability to Dry Run 
-- [x] Ability to verfiy the `.dunner.yaml` file
-- [x] Ability to define multiple commands for the same step
+- [ ] Ability to Dry Run 
+- [ ] Ability to verfiy the `.dunner.yaml` file
+- [ ] Ability to define multiple commands for the same step
 
 # Guides
 
