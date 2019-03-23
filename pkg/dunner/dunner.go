@@ -32,6 +32,13 @@ func Do(_ *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	errs, ok := configs.Validate()
+	for _, err := range errs {
+		log.Error(err)
+	}
+	if !ok {
+		os.Exit(1)
+	}
 
 	execTask(configs, args[0], args[1:])
 }
@@ -89,10 +96,6 @@ func process(configs *config.Configs, s *docker.Step, wg *sync.WaitGroup, args [
 
 	if err := passArgs(s, &args); err != nil {
 		log.Fatal(err)
-	}
-
-	if s.Image == "" {
-		log.Fatalf(`dunner: image repository name cannot be empty`)
 	}
 
 	pout, err := (*s).Exec()

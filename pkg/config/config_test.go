@@ -54,3 +54,50 @@ test:
 	}
 
 }
+
+func TestConfigs_Validate(t *testing.T) {
+	tasks := make(map[string][]Task, 0)
+	tasks["stats"] = []Task{getSampleTask()}
+	configs := &Configs{Tasks: tasks}
+
+	errs, ok := configs.Validate()
+
+	if !ok || len(errs) != 0 {
+		t.Fatalf("Configs Validation failed, expected to pass")
+	}
+}
+
+func TestConfigs_ValidateWithNoTasks(t *testing.T) {
+	tasks := make(map[string][]Task, 0)
+	configs := &Configs{Tasks: tasks}
+
+	errs, ok := configs.Validate()
+
+	if !ok || len(errs) != 1 {
+		t.Fatalf("Configs validation failed")
+	}
+	if errs[0].Error() != "dunner: No tasks defined" {
+		t.Fatalf("Configs Validation error message not as expected")
+	}
+}
+
+func TestConfigs_ValidateWithParseErrors(t *testing.T) {
+	tasks := make(map[string][]Task, 0)
+	task := Task{Image: "", Command: []string{}}
+	tasks["stats"] = []Task{task}
+	configs := &Configs{Tasks: tasks}
+
+	errs, ok := configs.Validate()
+
+	if ok || len(errs) != 2 {
+		t.Fatalf("Configs validation failed")
+	}
+
+	if errs[0].Error() != "dunner: [stats] Image repository name cannot be empty" || errs[1].Error() != "dunner: [stats] Commands not defined for task with image " {
+		t.Fatalf("Configs Validation error message not as expected")
+	}
+}
+
+func getSampleTask() Task {
+	return Task{Image: "image_name", Command: []string{"node", "--version"}}
+}

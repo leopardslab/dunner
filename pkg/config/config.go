@@ -41,6 +41,31 @@ type Configs struct {
 	Tasks map[string][]Task
 }
 
+// Validates config and returns a list of errors and warnings. If errors are not critical/only warnings, it returns param `ok` as true, else false
+func (configs *Configs) Validate() ([]error, bool) {
+	var errs []error
+	var warnings []error
+	if len(configs.Tasks) == 0 {
+		warnings = append(warnings, fmt.Errorf("dunner: No tasks defined"))
+	}
+
+	for taskName, tasks := range configs.Tasks {
+		for _, task := range tasks {
+			if task.Image == "" {
+				errs = append(errs, fmt.Errorf(`dunner: [%s] Image repository name cannot be empty`, taskName))
+			}
+			if len(task.Command) == 0 {
+				errs = append(errs, fmt.Errorf("dunner: [%s] Commands not defined for task with image %s", taskName, task.Image))
+			}
+		}
+	}
+	if len(errs) > 0 {
+		errs = append(errs, warnings...)
+		return errs, false
+	}
+	return warnings, true
+}
+
 // GetConfigs reads and parses tasks from the dunner file
 func GetConfigs(filename string) (*Configs, error) {
 	fileContents, err := ioutil.ReadFile(filename)

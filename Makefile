@@ -4,7 +4,7 @@ GOCMD=go
 GOINSTALL=$(GOCMD) install
 GOTEST=$(GOCMD) test
 DEP=dep 
-.PHONY : all install test
+.PHONY : all install vet fmt test
 
 all : def
 
@@ -19,3 +19,11 @@ test:
 
 clean:
 	rm -rf *
+
+vet:
+	@echo "=== go vet ==="
+	@go vet ./...
+
+fmt:
+	@echo "=== go fmt ==="
+	@go fmt ./...
