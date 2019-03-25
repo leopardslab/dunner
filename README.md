@@ -10,11 +10,14 @@ Example `.dunner.yaml`
 ```yaml
 deploy:
 - image: 'emeraldsquad/sonar-scanner'
-  command: ['sonar', 'scan']
+  commands:
+  - ['sonar', 'scan']
 - image: 'golang'
-  command: ['go', 'install']
+  commands:
+  - ['go', 'install']
 - image: 'mesosphere/aws-cli'
-  command: ['aws', 'elasticbeanstalk update-application --application-name myapp']
+  commands:
+  - ['aws', 'elasticbeanstalk update-application --application-name myapp']
   envs: 
    - AWS_ACCESS_KEY_ID=`$AWS_KEY`
    - AWS_SECRET_ACCESS_KEY=`$AWS_SECRET`
@@ -23,7 +26,8 @@ deploy:
   args: 'prod'
 status:
 - image: 'mesosphere/aws-cli'
-  command: ['aws', 'elasticbeanstalk describe-events --environment-name $1'] 
+  commands:
+  - ['aws', 'elasticbeanstalk describe-events --environment-name $1'] 
   # This uses args passed to the task, `$1` means first arg
   envs: 
    - AWS_ACCESS_KEY_ID=`$AWS_KEY`
