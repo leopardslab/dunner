@@ -1,17 +1,21 @@
 package docker
 
 import (
+	"bytes"
 	"context"
-	"io"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/jsonmessage"
+	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/docker/docker/pkg/term"
 	"github.com/leopardslab/dunner/internal/logger"
 	"github.com/spf13/viper"
@@ -24,7 +28,7 @@ type Step struct {
 	Task      string
 	Name      string
 	Image     string
-	Command   []string
+	Commands  [][]string
 	Env       []string
 	WorkDir   string
 	Volumes   map[string]string
@@ -32,8 +36,15 @@ type Step struct {
 	Args      []string
 }
 
+// Result stores the output of commands run using docker exec
+type Result struct {
+	Command string
+	Output  string
+	Error   string
+}
+
 // Exec method is used to execute the task described in the corresponding step
-func (step Step) Exec() (*io.ReadCloser, error) {
+func (step Step) Exec() (*[]Result, error) {
 
 	var (
 		hostMountFilepath          = "./"
@@ -87,7 +98,7 @@ func (step Step) Exec() (*io.ReadCloser, error) {
 		ctx,
 		&container.Config{
 			Image:      step.Image,
-			Cmd:        step.Command,
+			Cmd:        []string{"tail", "-f", "/dev/null"},
 			Env:        step.Env,
 			WorkingDir: containerWorkingDir,
 		},
@@ -103,27 +114,66 @@ func (step Step) Exec() (*io.ReadCloser, error) {
 		log.Fatal(err)
 	}
 
+	if len(resp.Warnings) > 0 {
+		for warning := range resp.Warnings {
+			log.Warn(warning)
+		}
+	}
+
 	if err = cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
 		log.Fatal(err)
 	}
 
-	statusCh, errCh := cli.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
-	select {
-	case err = <-errCh:
+	defer func() {
+		dur, err := time.ParseDuration("-1ns") // Negative duration means no force termination
 		if err != nil {
 			log.Fatal(err)
 		}
-	case <-statusCh:
+		if err = cli.ContainerStop(ctx, resp.ID, &dur); err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	var results []Result
+	for _, cmd := range step.Commands {
+		r, err := runCmd(ctx, cli, resp.ID, cmd)
+		if err != nil {
+			log.Fatal(err)
+		}
+		results = append(results, *r)
 	}
 
-	out, err = cli.ContainerLogs(ctx, resp.ID, types.ContainerLogsOptions{
-		ShowStdout: true,
-		ShowStderr: true,
+	return &results, nil
+}
+
+func runCmd(ctx context.Context, cli *client.Client, containerID string, command []string) (*Result, error) {
+	if len(command) == 0 {
+		return nil, fmt.Errorf(`config: Command cannot be empty`)
+	}
+
+	exec, err := cli.ContainerExecCreate(ctx, containerID, types.ExecConfig{
+		Cmd:          command,
+		AttachStdout: true,
+		AttachStderr: true,
 	})
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	return &out, nil
+	resp, err := cli.ContainerExecAttach(ctx, exec.ID, types.ExecStartCheck{})
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Close()
 
+	var out, errOut bytes.Buffer
+	if _, err = stdcopy.StdCopy(&out, &errOut, resp.Reader); err != nil {
+		log.Fatal(err)
+	}
+	var result = Result{
+		Command: strings.Join(command, " "),
+		Output:  out.String(),
+		Error:   errOut.String(),
+	}
+	return &result, nil
 }
