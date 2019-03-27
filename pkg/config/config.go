@@ -34,6 +34,7 @@ type Task struct {
 	Commands [][]string `yaml:"commands"`
 	Envs     []string   `yaml:"envs"`
 	Mounts   []string   `yaml:"mounts"`
+	Follow   string     `yaml:"follow"`
 	Args     []string   `yaml:"args"`
 }
 
