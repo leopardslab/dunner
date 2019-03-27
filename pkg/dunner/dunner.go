@@ -100,6 +100,10 @@ func process(configs *config.Configs, s *docker.Step, wg *sync.WaitGroup, args [
 		log.Fatal(err)
 	}
 
+	if results == nil {
+		return
+	}
+
 	for _, res := range *results {
 		log.Infof(
 			"Running task '%+v' on '%+v' Docker with command '%+v'",
