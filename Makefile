@@ -19,7 +19,7 @@ build:
 	@go build ./...
 
 test: build
-	@$(GOTEST) -v $(ALL_PACKAGES)
+	@go -v $(ALL_PACKAGES)
 
 vet:
 	@go vet $(ALL_PACKAGES)
