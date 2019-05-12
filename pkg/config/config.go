@@ -19,12 +19,6 @@ import (
 
 var log = logger.Log
 
-type DirMount struct {
-	Src      string `yaml:"src"`
-	Dest     string `yaml:"dest"`
-	ReadOnly bool   `yaml:"read-only"`
-}
-
 // Task describes a single task to be run in a docker container
 type Task struct {
 	Name    string   `yaml:"name"`
@@ -41,7 +35,7 @@ type Configs struct {
 	Tasks map[string][]Task
 }
 
-// Validates config and returns a list of errors and warnings. If errors are not critical/only warnings, it returns param `ok` as true, else false
+// Validate config and return a list of errors and warnings. If errors are not critical/only warnings, it returns param `ok` as true, else false
 func (configs *Configs) Validate() ([]error, bool) {
 	var errs []error
 	var warnings []error

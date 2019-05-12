@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/viper"
 )
 
+// Validate the configuration, fails if there are any errors
 func Validate(_ *cobra.Command, args []string) {
 	var dunnerFile = viper.GetString("DunnerTaskFile")
 

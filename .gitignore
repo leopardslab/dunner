@@ -24,3 +24,9 @@
 
 # Environment file
 .env
+
+# Coverage files
+coverage*
+
+# IDE files
+.idea/*
