@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/leopardslab/Dunner/cmd"
-	G "github.com/leopardslab/Dunner/pkg/global"
+	"github.com/leopardslab/dunner/cmd"
+	G "github.com/leopardslab/dunner/pkg/global"
 )
 
 var version string

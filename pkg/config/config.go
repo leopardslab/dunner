@@ -11,8 +11,8 @@ import (
 
 	"github.com/docker/docker/api/types/mount"
 	"github.com/joho/godotenv"
-	"github.com/leopardslab/Dunner/internal/logger"
-	"github.com/leopardslab/Dunner/pkg/docker"
+	"github.com/leopardslab/dunner/internal/logger"
+	"github.com/leopardslab/dunner/pkg/docker"
 	"github.com/spf13/viper"
 	yaml "gopkg.in/yaml.v2"
 )
