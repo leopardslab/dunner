@@ -1,5 +1,13 @@
 ALL_PACKAGES=$(shell go list ./... | grep -v "vendor")
 
+SHA=$(shell git rev-list HEAD --max-count=1 --abbrev-commit)
+TAG?=$(shell git tag -l --contains HEAD)
+VERSION=$(TAG)
+
+ifeq ($(VERSION),)
+VERSION := latest
+endif
+
 #Go parameters
 GOCMD=go
 GOINSTALL=$(GOCMD) install
@@ -15,8 +23,8 @@ setup: install
 install: 
 	@$(DEP) ensure
 
-build: 
-	@go build ./...
+build: install
+	@$(GOINSTALL) -ldflags "-X main.version=$(VERSION)-$(SHA) -s"
 
 test: build
 	@go -v $(ALL_PACKAGES)
