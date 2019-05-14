@@ -6,18 +6,29 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"strings"
 
 	"github.com/docker/docker/api/types/mount"
+	"github.com/go-playground/locales/en"
+	ut "github.com/go-playground/universal-translator"
 	"github.com/joho/godotenv"
 	"github.com/leopardslab/Dunner/internal/logger"
 	"github.com/leopardslab/Dunner/pkg/docker"
 	"github.com/spf13/viper"
+	"gopkg.in/go-playground/validator.v9"
+	en_translations "gopkg.in/go-playground/validator.v9/translations/en"
 	yaml "gopkg.in/yaml.v2"
 )
 
 var log = logger.Log
+
+var (
+	uni         *ut.UniversalTranslator
+	govalidator *validator.Validate
+	trans       ut.Translator
+)
 
 type DirMount struct {
 	Src      string `yaml:"src"`
@@ -28,9 +39,9 @@ type DirMount struct {
 // Task describes a single task to be run in a docker container
 type Task struct {
 	Name    string   `yaml:"name"`
-	Image   string   `yaml:"image"`
+	Image   string   `yaml:"image" validate:"required"`
 	SubDir  string   `yaml:"dir"`
-	Command []string `yaml:"command"`
+	Command []string `yaml:"command" validate:"required,min=1,dive,required"`
 	Envs    []string `yaml:"envs"`
 	Mounts  []string `yaml:"mounts"`
 	Args    []string `yaml:"args"`
@@ -38,32 +49,63 @@ type Task struct {
 
 // Configs describes the parsed information from the dunner file
 type Configs struct {
-	Tasks map[string][]Task
+	Tasks map[string][]Task `validate:"required,min=1,dive,keys,required,endkeys,required,min=1,required"`
 }
 
-// Validates config and returns a list of errors and warnings. If errors are not critical/only warnings, it returns param `ok` as true, else false
-func (configs *Configs) Validate() ([]error, bool) {
-	var errs []error
-	var warnings []error
-	if len(configs.Tasks) == 0 {
-		warnings = append(warnings, fmt.Errorf("dunner: No tasks defined"))
+// Validate validates config and returns errors.
+func (configs *Configs) Validate() []error {
+	err := initValidator()
+	if err != nil {
+		return []error{err}
 	}
+	valErrs := govalidator.Struct(configs)
+	errs := formatErrors(valErrs, "")
 
 	for taskName, tasks := range configs.Tasks {
-		for _, task := range tasks {
-			if task.Image == "" {
-				errs = append(errs, fmt.Errorf(`dunner: [%s] Image repository name cannot be empty`, taskName))
-			}
-			if len(task.Command) == 0 {
-				errs = append(errs, fmt.Errorf("dunner: [%s] Commands not defined for task with image %s", taskName, task.Image))
+		taskValErrs := govalidator.Var(tasks, "dive")
+		errs = append(errs, formatErrors(taskValErrs, taskName)...)
+	}
+	return errs
+}
+
+func formatErrors(valErrs error, taskName string) []error {
+	var errs []error
+	if valErrs != nil {
+		if _, ok := valErrs.(*validator.InvalidValidationError); ok {
+			errs = append(errs, valErrs)
+		} else {
+			for _, e := range valErrs.(validator.ValidationErrors) {
+				if taskName == "" {
+					errs = append(errs, fmt.Errorf(e.Translate(trans)))
+				} else {
+					errs = append(errs, fmt.Errorf("task '%s': %s", taskName, e.Translate(trans)))
+				}
 			}
 		}
 	}
-	if len(errs) > 0 {
-		errs = append(errs, warnings...)
-		return errs, false
+	return errs
+}
+
+func initValidator() error {
+	govalidator = validator.New()
+	govalidator.RegisterTagNameFunc(func(fld reflect.StructField) string {
+		name := strings.SplitN(fld.Tag.Get("yaml"), ",", 2)[0]
+		if name == "-" {
+			return ""
+		}
+		return name
+	})
+
+	translator := en.New()
+	uni = ut.New(translator, translator)
+
+	var translatorFound bool
+	trans, translatorFound = uni.GetTranslator("en")
+	if !translatorFound {
+		return fmt.Errorf("failed to initialize validator with translator")
 	}
-	return warnings, true
+	en_translations.RegisterDefaultTranslations(govalidator, trans)
+	return nil
 }
 
 // GetConfigs reads and parses tasks from the dunner file

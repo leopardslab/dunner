@@ -32,11 +32,11 @@ func Do(_ *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	errs, ok := configs.Validate()
-	for _, err := range errs {
-		log.Error(err)
-	}
-	if !ok {
+	errs := configs.Validate()
+	if len(errs) != 0 {
+		for _, err := range errs {
+			log.Error(err)
+		}
 		os.Exit(1)
 	}
 

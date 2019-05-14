@@ -60,10 +60,10 @@ func TestConfigs_Validate(t *testing.T) {
 	tasks["stats"] = []Task{getSampleTask()}
 	configs := &Configs{Tasks: tasks}
 
-	errs, ok := configs.Validate()
+	errs := configs.Validate()
 
-	if !ok || len(errs) != 0 {
-		t.Fatalf("Configs Validation failed, expected to pass")
+	if len(errs) != 0 {
+		t.Fatalf("Configs Validation failed, expected to pass. got: %s", errs)
 	}
 }
 
@@ -71,13 +71,14 @@ func TestConfigs_ValidateWithNoTasks(t *testing.T) {
 	tasks := make(map[string][]Task, 0)
 	configs := &Configs{Tasks: tasks}
 
-	errs, ok := configs.Validate()
+	errs := configs.Validate()
 
-	if !ok || len(errs) != 1 {
-		t.Fatalf("Configs validation failed")
+	if len(errs) != 1 {
+		t.Fatalf("Configs validation failed, expected 1 error, got %s", errs)
 	}
-	if errs[0].Error() != "dunner: No tasks defined" {
-		t.Fatalf("Configs Validation error message not as expected")
+	expected := "Tasks must contain at least 1 item"
+	if errs[0].Error() != expected {
+		t.Fatalf("expected: %s, got: %s", expected, errs[0].Error())
 	}
 }
 
@@ -87,14 +88,19 @@ func TestConfigs_ValidateWithParseErrors(t *testing.T) {
 	tasks["stats"] = []Task{task}
 	configs := &Configs{Tasks: tasks}
 
-	errs, ok := configs.Validate()
+	errs := configs.Validate()
 
-	if ok || len(errs) != 2 {
-		t.Fatalf("Configs validation failed")
+	if len(errs) != 2 {
+		t.Fatalf("expected 2 errors, got %d", len(errs))
 	}
 
-	if errs[0].Error() != "dunner: [stats] Image repository name cannot be empty" || errs[1].Error() != "dunner: [stats] Commands not defined for task with image " {
-		t.Fatalf("Configs Validation error message not as expected")
+	expected1 := "task 'stats': image is a required field"
+	expected2 := "task 'stats': command must contain at least 1 item"
+	if errs[0].Error() != expected1 {
+		t.Fatalf("expected: %s, got: %s", expected1, errs[0].Error())
+	}
+	if errs[1].Error() != expected2 {
+		t.Fatalf("expected: %s, got: %s", expected2, errs[1].Error())
 	}
 }
 
