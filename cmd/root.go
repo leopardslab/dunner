@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/docker/docker/client"
-	"github.com/leopardslab/Dunner/internal/logger"
+	"github.com/leopardslab/dunner/internal/logger"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

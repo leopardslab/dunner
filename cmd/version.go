@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/spf13/cobra"
-	G "github.com/leopardslab/Dunner/pkg/global"
+	G "github.com/leopardslab/dunner/pkg/global"
 )
 
 func init() {
