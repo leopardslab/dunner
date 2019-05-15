@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/leopardslab/dunner/pkg/config"
@@ -31,9 +32,11 @@ func Validate(_ *cobra.Command, args []string) {
 
 	errs := configs.Validate()
 	if len(errs) != 0 {
+		fmt.Println("Validation failed with following errors:")
 		for _, err := range errs {
-			log.Error(err)
+			fmt.Println(err.Error())
 		}
 		os.Exit(1)
 	}
+	fmt.Println("Validation successful!")
 }
