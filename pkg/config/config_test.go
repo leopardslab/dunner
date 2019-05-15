@@ -83,9 +83,9 @@ func TestConfigs_ValidateWithNoTasks(t *testing.T) {
 	}
 }
 
-func TestConfigs_ValidateWithParseErrors(t *testing.T) {
+func TestConfigs_ValidateWithEmptyImageAndCommand(t *testing.T) {
 	tasks := make(map[string][]Task, 0)
-	task := Task{Image: "", Command: []string{}}
+	task := Task{Image: "", Command: []string{""}}
 	tasks["stats"] = []Task{task}
 	configs := &Configs{Tasks: tasks}
 
@@ -96,7 +96,7 @@ func TestConfigs_ValidateWithParseErrors(t *testing.T) {
 	}
 
 	expected1 := "task 'stats': image is a required field"
-	expected2 := "task 'stats': command must contain at least 1 item"
+	expected2 := "task 'stats': command[0] is a required field"
 	if errs[0].Error() != expected1 {
 		t.Fatalf("expected: %s, got: %s", expected1, errs[0].Error())
 	}

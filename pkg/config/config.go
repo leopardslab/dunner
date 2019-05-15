@@ -1,6 +1,7 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -36,7 +37,7 @@ var (
 type customValidation struct {
 	tag          string
 	translation  string
-	validationFn func(fl validator.FieldLevel) bool
+	validationFn func(context.Context, validator.FieldLevel) bool
 }
 
 var customValidations = []customValidation{
@@ -58,9 +59,9 @@ type Task struct {
 	Name    string   `yaml:"name"`
 	Image   string   `yaml:"image" validate:"required"`
 	SubDir  string   `yaml:"dir"`
-	Command []string `yaml:"command" validate:"required,min=1,dive,required"`
+	Command []string `yaml:"command" validate:"omitempty,dive,required"`
 	Envs    []string `yaml:"envs"`
-	Mounts  []string `yaml:"mounts" validate:"omitempty,dive,mountdir"`
+	Mounts  []string `yaml:"mounts" validate:"omitempty,dive,min=1,mountdir"`
 	Args    []string `yaml:"args"`
 }
 
@@ -68,6 +69,10 @@ type Task struct {
 type Configs struct {
 	Tasks map[string][]Task `validate:"required,min=1,dive,keys,required,endkeys,required,min=1,required"`
 }
+
+type contextKey string
+
+var configsKey = contextKey("dunnerConfigs")
 
 // Validate validates config and returns errors.
 func (configs *Configs) Validate() []error {
@@ -77,10 +82,11 @@ func (configs *Configs) Validate() []error {
 	}
 	valErrs := govalidator.Struct(configs)
 	errs := formatErrors(valErrs, "")
+	ctx := context.WithValue(context.Background(), configsKey, configs)
 
 	// Each task is validated separately so that task name can be added in error messages
 	for taskName, tasks := range configs.Tasks {
-		taskValErrs := govalidator.Var(tasks, "dive")
+		taskValErrs := govalidator.VarCtx(ctx, tasks, "dive")
 		errs = append(errs, formatErrors(taskValErrs, taskName)...)
 	}
 	return errs
@@ -126,7 +132,7 @@ func initValidator(customValidations []customValidation) error {
 
 	// Register Custom validators and translations
 	for _, t := range customValidations {
-		err := govalidator.RegisterValidation(t.tag, t.validationFn)
+		err := govalidator.RegisterValidationCtx(t.tag, t.validationFn)
 		if err != nil {
 			return fmt.Errorf("failed to register validation: %s", err.Error())
 		}
@@ -140,7 +146,7 @@ func initValidator(customValidations []customValidation) error {
 
 // ValidateMountDir verifies that mount values are in proper format <src>:<dest>:<mode>
 // Format should match, <mode> is optional which is `readOnly` by default and `src` directory exists in host machine
-func ValidateMountDir(fl validator.FieldLevel) bool {
+func ValidateMountDir(ctx context.Context, fl validator.FieldLevel) bool {
 	value := fl.Field().String()
 	f := func(c rune) bool { return c == ':' }
 	mountValues := strings.FieldsFunc(value, f)
