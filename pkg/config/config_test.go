@@ -105,7 +105,7 @@ func TestConfigs_ValidateWithParseErrors(t *testing.T) {
 	}
 }
 
-func TestConfigs_ValidateWithInvalidMountDirectory(t *testing.T) {
+func TestConfigs_ValidateWithInvalidMountFormat(t *testing.T) {
 	tasks := make(map[string][]Task, 0)
 	task := getSampleTask()
 	task.Mounts = []string{"invalid_dir"}
@@ -118,7 +118,7 @@ func TestConfigs_ValidateWithInvalidMountDirectory(t *testing.T) {
 		t.Fatalf("expected 1 error, got %d : %s", len(errs), errs)
 	}
 
-	expected := "task 'stats': mount directory 'invalid_dir' is invalid. Use '<src>:<dest>:<mode>'"
+	expected := "task 'stats': mount directory 'invalid_dir' is invalid. Check format is '<valid_src_dir>:<valid_dest_dir>:<mode>' and has right permission level"
 	if errs[0].Error() != expected {
 		t.Fatalf("expected: %s, got: %s", expected, errs[0].Error())
 	}
@@ -139,6 +139,70 @@ func TestConfigs_ValidateWithValidMountDirectory(t *testing.T) {
 	}
 }
 
+func TestConfigs_ValidateWithNoModeGiven(t *testing.T) {
+	tasks := make(map[string][]Task, 0)
+	task := getSampleTask()
+	wd, _ := os.Getwd()
+	task.Mounts = []string{fmt.Sprintf("%s:%s", wd, wd)}
+	tasks["stats"] = []Task{task}
+	configs := &Configs{Tasks: tasks}
+
+	errs := configs.Validate()
+
+	if errs != nil {
+		t.Fatalf("expected no errors, got %s", errs)
+	}
+}
+
+func TestConfigs_ValidateWithInvalidMode(t *testing.T) {
+	tasks := make(map[string][]Task, 0)
+	task := getSampleTask()
+	wd, _ := os.Getwd()
+	task.Mounts = []string{fmt.Sprintf("%s:%s:ab", wd, wd)}
+	tasks["stats"] = []Task{task}
+	configs := &Configs{Tasks: tasks}
+
+	errs := configs.Validate()
+
+	expected := fmt.Sprintf("task 'stats': mount directory '%s' is invalid. Check format is '<valid_src_dir>:<valid_dest_dir>:<mode>' and has right permission level", task.Mounts[0])
+	if errs[0].Error() != expected {
+		t.Fatalf("expected: %s, got: %s", expected, errs[0].Error())
+	}
+}
+
+func TestConfigs_ValidateWithInvalidMountDirectory(t *testing.T) {
+	tasks := make(map[string][]Task, 0)
+	task := getSampleTask()
+	task.Mounts = []string{"blah:foo:w"}
+	tasks["stats"] = []Task{task}
+	configs := &Configs{Tasks: tasks}
+
+	errs := configs.Validate()
+
+	if len(errs) != 1 {
+		t.Fatalf("expected 1 error, got %d : %s", len(errs), errs)
+	}
+
+	expected := "task 'stats': mount directory 'blah:foo:w' is invalid. Check format is '<valid_src_dir>:<valid_dest_dir>:<mode>' and has right permission level"
+	if errs[0].Error() != expected {
+		t.Fatalf("expected: %s, got: %s", expected, errs[0].Error())
+	}
+}
+
 func getSampleTask() Task {
 	return Task{Image: "image_name", Command: []string{"node", "--version"}}
+}
+
+func TestInitValidatorForNilTranslation(t *testing.T) {
+	vals := []customValidation{{tag: "foo", translation: "", validationFn: nil}}
+
+	err := initValidator(vals)
+
+	expected := "failed to register validation: Function cannot be empty"
+	if err == nil {
+		t.Fatalf("expected %s, got %s", expected, err)
+	}
+	if err.Error() != expected {
+		t.Fatalf("expected %s, got %s", expected, err.Error())
+	}
 }

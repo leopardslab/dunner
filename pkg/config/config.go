@@ -15,6 +15,7 @@ import (
 	ut "github.com/go-playground/universal-translator"
 	"github.com/joho/godotenv"
 	"github.com/leopardslab/Dunner/internal/logger"
+	"github.com/leopardslab/Dunner/internal/util"
 	"github.com/leopardslab/Dunner/pkg/docker"
 	"github.com/spf13/viper"
 	"gopkg.in/go-playground/validator.v9"
@@ -25,19 +26,23 @@ import (
 var log = logger.Log
 
 var (
-	uni         *ut.UniversalTranslator
-	govalidator *validator.Validate
-	trans       ut.Translator
+	uni                     *ut.UniversalTranslator
+	govalidator             *validator.Validate
+	trans                   ut.Translator
+	defaultPermissionMode   = "r"
+	validDirPermissionModes = []string{defaultPermissionMode, "wr", "rw", "w"}
 )
 
-var customValidations = []struct {
+type customValidation struct {
 	tag          string
 	translation  string
 	validationFn func(fl validator.FieldLevel) bool
-}{
+}
+
+var customValidations = []customValidation{
 	{
 		tag:          "mountdir",
-		translation:  "mount directory '{0}' is invalid. Use '<src>:<dest>:<mode>'",
+		translation:  "mount directory '{0}' is invalid. Check format is '<valid_src_dir>:<valid_dest_dir>:<mode>' and has right permission level",
 		validationFn: ValidateMountDir,
 	},
 }
@@ -66,7 +71,7 @@ type Configs struct {
 
 // Validate validates config and returns errors.
 func (configs *Configs) Validate() []error {
-	err := initValidator()
+	err := initValidator(customValidations)
 	if err != nil {
 		return []error{err}
 	}
@@ -98,7 +103,7 @@ func formatErrors(valErrs error, taskName string) []error {
 	return errs
 }
 
-func initValidator() error {
+func initValidator(customValidations []customValidation) error {
 	govalidator = validator.New()
 	govalidator.RegisterTagNameFunc(func(fld reflect.StructField) string {
 		name := strings.SplitN(fld.Tag.Get("yaml"), ",", 2)[0]
@@ -132,15 +137,28 @@ func initValidator() error {
 	return nil
 }
 
-// ValidateMountDir verifies that mount values are in proper format
+// ValidateMountDir verifies that mount values are in proper format <src>:<dest>:<mode>
+// Format should match, <mode> is optional which is `readOnly` by default and `src` directory exists in host machine
 func ValidateMountDir(fl validator.FieldLevel) bool {
 	value := fl.Field().String()
 	f := func(c rune) bool { return c == ':' }
 	mountValues := strings.FieldsFunc(value, f)
 	if len(mountValues) != 3 {
+		mountValues = append(mountValues, defaultPermissionMode)
+	}
+	if len(mountValues) != 3 {
 		return false
 	}
-	return true
+	validPerm := false
+	for _, perm := range validDirPermissionModes {
+		if mountValues[2] == perm {
+			validPerm = true
+		}
+	}
+	if !validPerm {
+		return false
+	}
+	return util.DirExists(mountValues[0])
 }
 
 // GetConfigs reads and parses tasks from the dunner file
@@ -228,21 +246,10 @@ func DecodeMount(mounts []string, step *docker.Step) error {
 			strings.Trim(strings.Trim(m, `'`), `"`),
 			":",
 		)
-		if len(arr) != 3 && len(arr) != 2 {
-			return fmt.Errorf(
-				`config: invalid format for mount %s`,
-				m,
-			)
-		}
 		var readOnly = true
 		if len(arr) == 3 {
 			if arr[2] == "wr" || arr[2] == "w" {
 				readOnly = false
-			} else if arr[2] != "r" {
-				return fmt.Errorf(
-					`config: invalid format of read-write mode for mount '%s'`,
-					m,
-				)
 			}
 		}
 		src, err := filepath.Abs(joinPathRelToHome(arr[0]))
@@ -263,7 +270,7 @@ func DecodeMount(mounts []string, step *docker.Step) error {
 
 func joinPathRelToHome(p string) string {
 	if p[0] == '~' {
-		return path.Join(os.Getenv("HOME"), strings.Trim(p, "~"))
+		return path.Join(util.HomeDir, strings.Trim(p, "~"))
 	}
 	return p
 }
