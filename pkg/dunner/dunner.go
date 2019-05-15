@@ -8,9 +8,9 @@ import (
 	"sync"
 
 	"github.com/docker/docker/pkg/stdcopy"
-	"github.com/leopardslab/Dunner/internal/logger"
-	"github.com/leopardslab/Dunner/pkg/config"
-	"github.com/leopardslab/Dunner/pkg/docker"
+	"github.com/leopardslab/dunner/internal/logger"
+	"github.com/leopardslab/dunner/pkg/config"
+	"github.com/leopardslab/dunner/pkg/docker"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

@@ -3,7 +3,7 @@ package cmd
 import (
 	"os"
 
-	"github.com/leopardslab/Dunner/pkg/config"
+	"github.com/leopardslab/dunner/pkg/config"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

@@ -14,9 +14,9 @@ import (
 	"github.com/go-playground/locales/en"
 	ut "github.com/go-playground/universal-translator"
 	"github.com/joho/godotenv"
-	"github.com/leopardslab/Dunner/internal/logger"
-	"github.com/leopardslab/Dunner/internal/util"
-	"github.com/leopardslab/Dunner/pkg/docker"
+	"github.com/leopardslab/dunner/internal/logger"
+	"github.com/leopardslab/dunner/internal/util"
+	"github.com/leopardslab/dunner/pkg/docker"
 	"github.com/spf13/viper"
 	"gopkg.in/go-playground/validator.v9"
 	en_translations "gopkg.in/go-playground/validator.v9/translations/en"
@@ -78,6 +78,7 @@ func (configs *Configs) Validate() []error {
 	valErrs := govalidator.Struct(configs)
 	errs := formatErrors(valErrs, "")
 
+	// Each task is validated separately so that task name can be added in error messages
 	for taskName, tasks := range configs.Tasks {
 		taskValErrs := govalidator.Var(tasks, "dive")
 		errs = append(errs, formatErrors(taskValErrs, taskName)...)

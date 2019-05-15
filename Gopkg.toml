@@ -43,13 +43,9 @@
   unused-packages = true
 
 [[constraint]]
-  name = "github.com/go-playground/validator"
-  version = "9.28.0"
-
-[[constraint]]
-  name = "github.com/go-playground/locales"
-  version = "0.12.1"
-
-[[constraint]]
   name = "gopkg.in/go-playground/validator.v9"
   version = "9.28.0"
+
+[[constraint]]
+  name = "github.com/go-playground/universal-translator"
+  version = "0.16.0"
