@@ -30,6 +30,18 @@ var (
 	trans       ut.Translator
 )
 
+var customValidations = []struct {
+	tag          string
+	translation  string
+	validationFn func(fl validator.FieldLevel) bool
+}{
+	{
+		tag:          "mountdir",
+		translation:  "mount directory '{0}' is invalid. Use '<src>:<dest>:<mode>'",
+		validationFn: ValidateMountDir,
+	},
+}
+
 type DirMount struct {
 	Src      string `yaml:"src"`
 	Dest     string `yaml:"dest"`
@@ -43,7 +55,7 @@ type Task struct {
 	SubDir  string   `yaml:"dir"`
 	Command []string `yaml:"command" validate:"required,min=1,dive,required"`
 	Envs    []string `yaml:"envs"`
-	Mounts  []string `yaml:"mounts"`
+	Mounts  []string `yaml:"mounts" validate:"omitempty,dive,mountdir"`
 	Args    []string `yaml:"args"`
 }
 
@@ -96,16 +108,39 @@ func initValidator() error {
 		return name
 	})
 
+	// Register default translators
 	translator := en.New()
 	uni = ut.New(translator, translator)
-
 	var translatorFound bool
 	trans, translatorFound = uni.GetTranslator("en")
 	if !translatorFound {
 		return fmt.Errorf("failed to initialize validator with translator")
 	}
 	en_translations.RegisterDefaultTranslations(govalidator, trans)
+
+	// Register Custom validators and translations
+	for _, t := range customValidations {
+		err := govalidator.RegisterValidation(t.tag, t.validationFn)
+		if err != nil {
+			return fmt.Errorf("failed to register validation: %s", err.Error())
+		}
+		err = govalidator.RegisterTranslation(t.tag, trans, registrationFunc(t.tag, t.translation), translateFunc)
+		if err != nil {
+			return fmt.Errorf("failed to register translations: %s", err.Error())
+		}
+	}
 	return nil
+}
+
+// ValidateMountDir verifies that mount values are in proper format
+func ValidateMountDir(fl validator.FieldLevel) bool {
+	value := fl.Field().String()
+	f := func(c rune) bool { return c == ':' }
+	mountValues := strings.FieldsFunc(value, f)
+	if len(mountValues) != 3 {
+		return false
+	}
+	return true
 }
 
 // GetConfigs reads and parses tasks from the dunner file
@@ -231,4 +266,21 @@ func joinPathRelToHome(p string) string {
 		return path.Join(os.Getenv("HOME"), strings.Trim(p, "~"))
 	}
 	return p
+}
+
+func registrationFunc(tag string, translation string) validator.RegisterTranslationsFunc {
+	return func(ut ut.Translator) (err error) {
+		if err = ut.Add(tag, translation, true); err != nil {
+			return
+		}
+		return
+	}
+}
+
+func translateFunc(ut ut.Translator, fe validator.FieldError) string {
+	t, err := ut.T(fe.Tag(), reflect.ValueOf(fe.Value()).String(), fe.Param())
+	if err != nil {
+		return fe.(error).Error()
+	}
+	return t
 }

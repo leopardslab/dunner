@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"reflect"
@@ -91,7 +92,7 @@ func TestConfigs_ValidateWithParseErrors(t *testing.T) {
 	errs := configs.Validate()
 
 	if len(errs) != 2 {
-		t.Fatalf("expected 2 errors, got %d", len(errs))
+		t.Fatalf("expected 2 errors, got %d : %s", len(errs), errs)
 	}
 
 	expected1 := "task 'stats': image is a required field"
@@ -101,6 +102,40 @@ func TestConfigs_ValidateWithParseErrors(t *testing.T) {
 	}
 	if errs[1].Error() != expected2 {
 		t.Fatalf("expected: %s, got: %s", expected2, errs[1].Error())
+	}
+}
+
+func TestConfigs_ValidateWithInvalidMountDirectory(t *testing.T) {
+	tasks := make(map[string][]Task, 0)
+	task := getSampleTask()
+	task.Mounts = []string{"invalid_dir"}
+	tasks["stats"] = []Task{task}
+	configs := &Configs{Tasks: tasks}
+
+	errs := configs.Validate()
+
+	if len(errs) != 1 {
+		t.Fatalf("expected 1 error, got %d : %s", len(errs), errs)
+	}
+
+	expected := "task 'stats': mount directory 'invalid_dir' is invalid. Use '<src>:<dest>:<mode>'"
+	if errs[0].Error() != expected {
+		t.Fatalf("expected: %s, got: %s", expected, errs[0].Error())
+	}
+}
+
+func TestConfigs_ValidateWithValidMountDirectory(t *testing.T) {
+	tasks := make(map[string][]Task, 0)
+	task := getSampleTask()
+	wd, _ := os.Getwd()
+	task.Mounts = []string{fmt.Sprintf("%s:%s:w", wd, wd)}
+	tasks["stats"] = []Task{task}
+	configs := &Configs{Tasks: tasks}
+
+	errs := configs.Validate()
+
+	if errs != nil {
+		t.Fatalf("expected no errors, got %s", errs)
 	}
 }
 
