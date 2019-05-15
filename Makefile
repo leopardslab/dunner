@@ -13,7 +13,7 @@ endif
 GOCMD=go
 GOINSTALL=$(GOCMD) install
 GOTEST=$(GOCMD) test
-DEP=dep 
+DEP=dep
 
 all: build
 
