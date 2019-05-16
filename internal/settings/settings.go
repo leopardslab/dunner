@@ -4,7 +4,10 @@ import (
 	"github.com/spf13/viper"
 )
 
-func init() {
+// Init function initializes the default settings for dunner
+// These settings can tweaked using appropriate environment variables, or
+// defining the configuration in conf present in the appropriate config files
+func Init() {
 	// Settings file
 	viper.SetConfigName("settings")
 	viper.SetConfigType("yaml")
