@@ -28,3 +28,5 @@ build:	install
 
 clean:
 	rm -rf *
+
+ci: build test
