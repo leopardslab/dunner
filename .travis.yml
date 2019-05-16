@@ -18,8 +18,9 @@ env:
   - PATH=/snap/bin:$PATH
 
 before_install:
-  - curl -L -s https://github.com/golang/dep/releases/download/v${DEP_VERSION}/dep-linux-amd64 -o $GOPATH/bin/dep
+  - curl -L -s -v https://github.com/golang/dep/releases/download/v${DEP_VERSION}/dep-linux-amd64 -o $GOPATH/bin/dep
   - chmod +x $GOPATH/bin/dep
+  - ls -al $GOPATH/bin
   - dep version
 
 install:
