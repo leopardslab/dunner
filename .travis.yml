@@ -19,7 +19,7 @@ addons:
 before_install:
   - curl -L -s -v https://github.com/golang/dep/releases/download/v${DEP_VERSION}/dep-linux-amd64 -o $GOPATH/bin/dep
   - chmod +x $GOPATH/bin/dep
-  - dep version
+  - $GOPATH/bin/dep version
 
 install:
   - $GOPATH/bin/dep ensure -v
