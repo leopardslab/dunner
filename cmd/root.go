@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -18,13 +19,11 @@ var rootCmd = &cobra.Command{
 	Long:  `You can define a set of commands and on what Docker images these commands should run as steps. A task has many steps. Then you can run these tasks with 'dunner do nameoftask'`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		_, err := client.NewClientWithOpts(
-			client.FromEnv,
-			client.WithVersion(viper.GetString("DockerAPIVersion")),
-		)
+		cli, err := client.NewClientWithOpts(client.FromEnv)
 		if err != nil {
 			log.Fatal(err)
 		}
+		cli.NegotiateAPIVersion(context.Background())
 
 		fmt.Println("Dunner running!")
 	},
