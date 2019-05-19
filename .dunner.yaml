@@ -5,8 +5,7 @@ build:
       - ["npm", "--version"]
   - image: alpine
     dir: pkg
-    commands:
-    - ["pwd"]
+    command: ["pwd"]
   - image: alpine
     commands:
       - ["apk", "update"]

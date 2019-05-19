@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -28,6 +29,7 @@ type Step struct {
 	Task      string
 	Name      string
 	Image     string
+	Command   []string
 	Commands  [][]string
 	Env       []string
 	WorkDir   string
@@ -50,6 +52,8 @@ func (step Step) Exec() (*[]Result, error) {
 		hostMountFilepath          = "./"
 		containerDefaultWorkingDir = "/dunner"
 		hostMountTarget            = "/dunner"
+		defaultCommand             = []string{"tail", "-f", "/dev/null"}
+		multipleCommands           = false
 	)
 
 	ctx := context.Background()
@@ -67,7 +71,6 @@ func (step Step) Exec() (*[]Result, error) {
 	}
 
 	log.Infof("Pulling an image: '%s'", step.Image)
-
 	out, err := cli.ImagePull(ctx, step.Image, types.ImagePullOptions{})
 	if err != nil {
 		log.Fatal(err)
@@ -94,11 +97,15 @@ func (step Step) Exec() (*[]Result, error) {
 		containerWorkingDir = filepath.Join(hostMountTarget, step.WorkDir)
 	}
 
+	multipleCommands = len(step.Commands) > 0
+	if !multipleCommands {
+		defaultCommand = step.Command
+	}
 	resp, err := cli.ContainerCreate(
 		ctx,
 		&container.Config{
 			Image:      step.Image,
-			Cmd:        []string{"tail", "-f", "/dev/null"},
+			Cmd:        defaultCommand,
 			Env:        step.Env,
 			WorkingDir: containerWorkingDir,
 		},
@@ -135,14 +142,34 @@ func (step Step) Exec() (*[]Result, error) {
 	}()
 
 	var results []Result
-	for _, cmd := range step.Commands {
-		r, err := runCmd(ctx, cli, resp.ID, cmd)
+	if multipleCommands {
+		for _, cmd := range step.Commands {
+			r, err := runCmd(ctx, cli, resp.ID, cmd)
+			if err != nil {
+				log.Fatal(err)
+			}
+			results = append(results, *r)
+		}
+	} else {
+		statusCh, errCh := cli.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
+		select {
+		case err = <-errCh:
+			if err != nil {
+				log.Fatal(err)
+			}
+		case <-statusCh:
+		}
+
+		out, err := cli.ContainerLogs(ctx, resp.ID, types.ContainerLogsOptions{
+			ShowStdout: true,
+			ShowStderr: true,
+		})
 		if err != nil {
 			log.Fatal(err)
 		}
-		results = append(results, *r)
-	}
 
+		results = []Result{*extractResult(out, step.Command)}
+	}
 	return &results, nil
 }
 
@@ -166,8 +193,13 @@ func runCmd(ctx context.Context, cli *client.Client, containerID string, command
 	}
 	defer resp.Close()
 
+	return extractResult(resp.Reader, command), nil
+}
+
+func extractResult(reader io.Reader, command []string) *Result {
+
 	var out, errOut bytes.Buffer
-	if _, err = stdcopy.StdCopy(&out, &errOut, resp.Reader); err != nil {
+	if _, err := stdcopy.StdCopy(&out, &errOut, reader); err != nil {
 		log.Fatal(err)
 	}
 	var result = Result{
@@ -175,5 +207,5 @@ func runCmd(ctx context.Context, cli *client.Client, containerID string, command
 		Output:  out.String(),
 		Error:   errOut.String(),
 	}
-	return &result, nil
+	return &result
 }

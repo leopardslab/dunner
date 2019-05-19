@@ -30,6 +30,7 @@ type Task struct {
 	Name     string     `yaml:"name"`
 	Image    string     `yaml:"image"`
 	SubDir   string     `yaml:"dir"`
+	Command  []string   `yaml:"command"`
 	Commands [][]string `yaml:"commands"`
 	Envs     []string   `yaml:"envs"`
 	Mounts   []string   `yaml:"mounts"`

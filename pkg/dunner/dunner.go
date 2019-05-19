@@ -46,6 +46,7 @@ func execTask(configs *config.Configs, taskName string, args []string) {
 			Task:     taskName,
 			Name:     stepDefinition.Name,
 			Image:    stepDefinition.Image,
+			Command:  stepDefinition.Command,
 			Commands: stepDefinition.Commands,
 			Env:      stepDefinition.Envs,
 			WorkDir:  stepDefinition.SubDir,
