@@ -34,6 +34,9 @@ var (
 	validDirPermissionModes = []string{defaultPermissionMode, "wr", "rw", "w"}
 )
 
+type contextKey string
+var configsKey = contextKey("dunnerConfigs")
+
 type customValidation struct {
 	tag          string
 	translation  string
@@ -56,23 +59,21 @@ type DirMount struct {
 
 // Task describes a single task to be run in a docker container
 type Task struct {
-	Name    string   `yaml:"name"`
-	Image   string   `yaml:"image" validate:"required"`
-	SubDir  string   `yaml:"dir"`
-	Command []string `yaml:"command" validate:"omitempty,dive,required"`
-	Envs    []string `yaml:"envs"`
-	Mounts  []string `yaml:"mounts" validate:"omitempty,dive,min=1,mountdir"`
-	Args    []string `yaml:"args"`
+	Name     string     `yaml:"name"`
+	Image    string     `yaml:"image" validate:"required"`
+	SubDir   string     `yaml:"dir"`
+	Command  []string   `yaml:"command" validate:"omitempty,dive,required"`
+	Commands [][]string `yaml:"commands"`
+	Envs     []string   `yaml:"envs"`
+	Mounts   []string   `yaml:"mounts" validate:"omitempty,dive,min=1,mountdir"`
+	Follow   string     `yaml:"follow"`
+	Args     []string   `yaml:"args"`
 }
 
 // Configs describes the parsed information from the dunner file
 type Configs struct {
 	Tasks map[string][]Task `validate:"required,min=1,dive,keys,required,endkeys,required,min=1,required"`
 }
-
-type contextKey string
-
-var configsKey = contextKey("dunnerConfigs")
 
 // Validate validates config and returns errors.
 func (configs *Configs) Validate() []error {
