@@ -50,3 +50,8 @@ test-coverage:
 	tail -n +2 coverage.out >> coverage-all.out;)
 	@go tool cover -html=coverage-all.out -o coverage.html
 
+release:
+	@echo "Make sure you run this on master branch to make a release"
+	@echo "Adding tag for version: $(VERSION)"
+	git tag -a $(VERSION) -m "Release version $(VERSION)"
+	@echo "Run \"git push origin $(VERSION)\" to push tag to remote which makes a dunner release!"
