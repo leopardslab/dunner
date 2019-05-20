@@ -29,7 +29,7 @@ build: install
 ci: test
 
 test: build
-	@go -v $(ALL_PACKAGES)
+	@go test -v $(ALL_PACKAGES)
 
 vet:
 	@go vet $(ALL_PACKAGES)
