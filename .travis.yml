@@ -5,16 +5,38 @@ go:
   - master
 
 env:
-  - DEP_VERSION="0.5.0"
+  global:
+    - DEP_VERSION="0.5.0"
+    - PATH=/snap/bin:$PATH
 
 services:
   - docker
+addons:
+  apt:
+    packages:
+    - rpm
+    - snapd
 
 before_install:
   - curl -L -s https://github.com/golang/dep/releases/download/v${DEP_VERSION}/dep-linux-amd64 -o $GOPATH/bin/dep
   - chmod +x $GOPATH/bin/dep
 
 install:
-  - dep ensure -v
+  - $GOPATH/bin/dep ensure -v
+  - sudo snap install snapcraft --classic
 
-script: go test -v ./...
+script:
+  - make ci
+
+after_success:
+  - test -n "$TRAVIS_TAG" && snapcraft login --with snap.login
+
+deploy:
+- provider: script
+  skip_cleanup: true
+  script: curl -sL https://git.io/goreleaser | bash
+  verbose: true
+  on:
+    tags: true
+    condition: $TRAVIS_OS_NAME = linux
+    master: true
