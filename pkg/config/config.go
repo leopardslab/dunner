@@ -35,6 +35,7 @@ var (
 )
 
 type contextKey string
+
 var configsKey = contextKey("dunnerConfigs")
 
 type customValidation struct {
