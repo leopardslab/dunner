@@ -52,12 +52,6 @@ var customValidations = []customValidation{
 	},
 }
 
-type DirMount struct {
-	Src      string `yaml:"src"`
-	Dest     string `yaml:"dest"`
-	ReadOnly bool   `yaml:"read-only"`
-}
-
 // Task describes a single task to be run in a docker container
 type Task struct {
 	Name     string     `yaml:"name"`
