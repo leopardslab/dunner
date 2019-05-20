@@ -58,13 +58,11 @@ func (step Step) Exec() (*[]Result, error) {
 	)
 
 	ctx := context.Background()
-	cli, err := client.NewClientWithOpts(
-		client.FromEnv,
-		client.WithVersion(viper.GetString("DockerAPIVersion")),
-	)
+	cli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		log.Fatal(err)
 	}
+	cli.NegotiateAPIVersion(ctx)
 
 	path, err := filepath.Abs(hostMountFilepath)
 	if err != nil {
