@@ -35,6 +35,7 @@ type Step struct {
 	WorkDir   string
 	Volumes   map[string]string
 	ExtMounts []mount.Mount
+	Follow    string
 	Args      []string
 }
 

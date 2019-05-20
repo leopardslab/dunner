@@ -16,7 +16,7 @@ build:
       - PERM=775
       - ID=dunner
       - DIR=`$HOME`
-  - name: '@show'
+  - follow: 'show'
     args:
       - '/root'
 show:

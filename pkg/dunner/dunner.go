@@ -50,6 +50,7 @@ func execTask(configs *config.Configs, taskName string, args []string) {
 			Commands: stepDefinition.Commands,
 			Env:      stepDefinition.Envs,
 			WorkDir:  stepDefinition.SubDir,
+			Follow:   stepDefinition.Follow,
 			Args:     stepDefinition.Args,
 		}
 
@@ -73,16 +74,15 @@ func process(configs *config.Configs, s *docker.Step, wg *sync.WaitGroup, args [
 		defer wg.Done()
 	}
 
-	if newTask := regexp.MustCompile(`^@\w+$`).FindString(s.Name); newTask != "" {
-		newTask = strings.Trim(newTask, "@")
+	if s.Follow != "" {
 		if async {
 			wg.Add(1)
 			go func(wg *sync.WaitGroup) {
-				execTask(configs, newTask, s.Args)
+				execTask(configs, s.Follow, s.Args)
 				wg.Done()
 			}(wg)
 		} else {
-			execTask(configs, newTask, s.Args)
+			execTask(configs, s.Follow, s.Args)
 		}
 		return
 	}

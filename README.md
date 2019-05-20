@@ -22,7 +22,7 @@ deploy:
    - AWS_ACCESS_KEY_ID=`$AWS_KEY`
    - AWS_SECRET_ACCESS_KEY=`$AWS_SECRET`
    - AWS_DEFAULT_REGION=us-east1
-- name: '@status' #This refers to another task and can pass args too
+- follow: 'status' #This refers to another task and can pass args too
   args: 'prod'
 status:
 - image: 'mesosphere/aws-cli'
