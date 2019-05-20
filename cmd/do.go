@@ -10,8 +10,14 @@ func init() {
 	rootCmd.AddCommand(doCmd)
 
 	// Async Mode
-	doCmd.Flags().BoolP("async", "A", false, "Async mode")
+	doCmd.Flags().BoolP("async", "A", false, "Asynchronous mode")
 	if err := viper.BindPFlag("Async", doCmd.Flags().Lookup("async")); err != nil {
+		log.Fatal(err)
+	}
+
+	// Dry-run mode
+	doCmd.Flags().Bool("dry-run", false, "Dry-run of the command")
+	if err := viper.BindPFlag("Dry-run", doCmd.Flags().Lookup("dry-run")); err != nil {
 		log.Fatal(err)
 	}
 
