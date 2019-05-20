@@ -21,13 +21,14 @@ var log = logger.Log
 
 // Task describes a single task to be run in a docker container
 type Task struct {
-	Name    string   `yaml:"name"`
-	Image   string   `yaml:"image"`
-	SubDir  string   `yaml:"dir"`
-	Command []string `yaml:"command"`
-	Envs    []string `yaml:"envs"`
-	Mounts  []string `yaml:"mounts"`
-	Args    []string `yaml:"args"`
+	Name     string     `yaml:"name"`
+	Image    string     `yaml:"image"`
+	SubDir   string     `yaml:"dir"`
+	Command  []string   `yaml:"command"`
+	Commands [][]string `yaml:"commands"`
+	Envs     []string   `yaml:"envs"`
+	Mounts   []string   `yaml:"mounts"`
+	Args     []string   `yaml:"args"`
 }
 
 // Configs describes the parsed information from the dunner file

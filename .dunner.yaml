@@ -1,15 +1,17 @@
 build:
   - image: node:10.15.0
-    command: ["node", "--version"]
-  - image: node:10.15.0
-    command: ["npm", "--version"]
+    commands:
+      - ["node", "--version"]
+      - ["npm", "--version"]
   - image: alpine
     dir: pkg
     command: ["pwd"]
   - image: alpine
-    command: ["apk", "update"]
+    commands:
+      - ["apk", "update"]
   - image: alpine
-    command: ["printenv"]
+    commands:
+      - ["printenv"]
     envs:
       - PERM=775
       - ID=dunner
@@ -19,7 +21,8 @@ build:
       - '/root'
 show:
   - image: alpine
-    command: ["ls", "$1"]
+    commands:
+      - ["ls", "$1"]
     mounts:
       - '~/Downloads:/root/down'
       - ~/Pictures:/root/pics:wr
