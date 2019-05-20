@@ -1,6 +1,7 @@
 # Dunner
 
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/b2275e331d2745dc9527d45efbbf2da2)](https://app.codacy.com/app/Leopardslab/dunner?utm_source=github.com&utm_medium=referral&utm_content=leopardslab/dunner&utm_campaign=Badge_Grade_Dashboard)
+[![Build Status](https://travis-ci.org/leopardslab/Dunner.svg?branch=master)](https://travis-ci.org/leopardslab/Dunner)
 
 Dunner is a task runner tool like Grunt but uses Docker images like CircleCI do. You can define tasks and steps of the tasks in your `.dunner.yaml` file and then run these steps with `dunner do taskname`
 
@@ -55,15 +56,15 @@ This work is still in progress. See the development plan.
 - [x] Ability to mount other dirs to the task containers
 - [x] Ability to use a task as a step for another task
 - [x] Ability to get ENV, param, etc values from host environment variables or `.env` file
-- [ ] Ability to install as a Snap package
-- [ ] Ability to install as a Deb package
-- [ ] Ability to install as a RPM package
-- [ ] Ability to install as a Brew package
+- [x] Ability to install as a Snap package
 
 ### [`v2.0`](https://github.com/leopardslab/dunner/milestone/3) 
 - [ ] Ability to Dry Run 
 - [ ] Ability to verfiy the `.dunner.yaml` file
 - [ ] Ability to define multiple commands for the same step
+- [ ] Ability to install as a Deb package
+- [ ] Ability to install as a RPM package
+- [ ] Ability to install as a Brew package
 
 # Guides
 
