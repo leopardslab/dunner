@@ -22,7 +22,7 @@ before_install:
   - chmod +x $GOPATH/bin/dep
 
 install:
-  - $GOPATH/bin/dep ensure -v
+  - make setup
   - sudo snap install snapcraft --classic
 
 script:

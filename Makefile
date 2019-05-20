@@ -21,7 +21,7 @@ setup: install
 	@go get -u golang.org/x/lint/golint
 
 install: 
-	@$(DEP) ensure
+	@$(DEP) ensure -v
 
 build: install
 	@$(GOINSTALL) -ldflags "-X main.version=$(VERSION)-$(SHA) -s"
