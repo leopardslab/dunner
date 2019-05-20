@@ -1,35 +1,30 @@
 package docker
 
 import (
-	"bytes"
 	"strings"
 	"testing"
+
+	"github.com/leopardslab/dunner/internal/settings"
 )
 
 func TestStep_Do(t *testing.T) {
-
+	settings.Init()
 	var testNodeVersion = "10.15.0"
-
 	step := &Step{
-		Task:    "test",
-		Name:    "node",
-		Image:   "node:" + testNodeVersion,
-		Command: []string{"node", "--version"},
-		Env:     nil,
-		Volumes: nil,
+		Task:     "test",
+		Name:     "node",
+		Image:    "node:" + testNodeVersion,
+		Commands: [][]string{{"node", "--version"}},
+		Env:      nil,
+		Volumes:  nil,
 	}
 
-	pout, err := step.Exec()
-	if err != nil {
-		t.Error(err)
-	}
-	buffer := new(bytes.Buffer)
-	_, err = buffer.ReadFrom(*pout)
+	results, err := step.Exec()
 	if err != nil {
 		t.Error(err)
 	}
 
-	strOut := buffer.String()
+	strOut := (*results)[0].Output
 	var result = strings.Trim(strings.Split(strOut, "v")[1], "\n")
 	if result != testNodeVersion {
 		t.Fatalf("Detected version of node container: '%s'; Expected output: '%s'", result, testNodeVersion)

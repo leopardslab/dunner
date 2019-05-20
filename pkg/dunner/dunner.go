@@ -1,13 +1,12 @@
 package dunner
 
 import (
-	"os"
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
 	"sync"
 
-	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/leopardslab/dunner/internal/logger"
 	"github.com/leopardslab/dunner/pkg/config"
 	"github.com/leopardslab/dunner/pkg/docker"
@@ -44,13 +43,15 @@ func execTask(configs *config.Configs, taskName string, args []string) {
 			wg.Add(1)
 		}
 		step := docker.Step{
-			Task:    taskName,
-			Name:    stepDefinition.Name,
-			Image:   stepDefinition.Image,
-			Command: stepDefinition.Command,
-			Env:     stepDefinition.Envs,
-			WorkDir: stepDefinition.SubDir,
-			Args:    stepDefinition.Args,
+			Task:     taskName,
+			Name:     stepDefinition.Name,
+			Image:    stepDefinition.Image,
+			Command:  stepDefinition.Command,
+			Commands: stepDefinition.Commands,
+			Env:      stepDefinition.Envs,
+			WorkDir:  stepDefinition.SubDir,
+			Follow:   stepDefinition.Follow,
+			Args:     stepDefinition.Args,
 		}
 
 		if err := config.DecodeMount(stepDefinition.Mounts, &step); err != nil {
@@ -73,16 +74,15 @@ func process(configs *config.Configs, s *docker.Step, wg *sync.WaitGroup, args [
 		defer wg.Done()
 	}
 
-	if newTask := regexp.MustCompile(`^@\w+$`).FindString(s.Name); newTask != "" {
-		newTask = strings.Trim(newTask, "@")
+	if s.Follow != "" {
 		if async {
 			wg.Add(1)
 			go func(wg *sync.WaitGroup) {
-				execTask(configs, newTask, s.Args)
+				execTask(configs, s.Follow, s.Args)
 				wg.Done()
 			}(wg)
 		} else {
-			execTask(configs, newTask, s.Args)
+			execTask(configs, s.Follow, s.Args)
 		}
 		return
 	}
@@ -95,38 +95,40 @@ func process(configs *config.Configs, s *docker.Step, wg *sync.WaitGroup, args [
 		log.Fatalf(`dunner: image repository name cannot be empty`)
 	}
 
-	pout, err := (*s).Exec()
+	results, err := (*s).Exec()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	log.Infof(
-		"Running task '%+v' on '%+v' Docker with command '%+v'",
-		s.Task,
-		s.Image,
-		strings.Join(s.Command, " "),
-	)
-
-	if _, err = stdcopy.StdCopy(os.Stdout, os.Stderr, *pout); err != nil {
-		log.Fatal(err)
-	}
-
-	if err = (*pout).Close(); err != nil {
-		log.Fatal(err)
+	for _, res := range *results {
+		log.Infof(
+			"Running task '%+v' on '%+v' Docker with command '%+v'",
+			s.Task,
+			s.Image,
+			res.Command,
+		)
+		if res.Output != "" {
+			fmt.Printf(`OUT: %s`, res.Output)
+		}
+		if res.Error != "" {
+			fmt.Printf(`ERR: %s`, res.Error)
+		}
 	}
 }
 
 func passArgs(s *docker.Step, args *[]string) error {
-	for i, subStr := range s.Command {
-		regex := regexp.MustCompile(`\$[1-9][0-9]*`)
-		subStr = regex.ReplaceAllStringFunc(subStr, func(str string) string {
-			j, err := strconv.Atoi(strings.Trim(str, "$"))
-			if err != nil {
-				log.Fatal(err)
-			}
-			return (*args)[j-1]
-		})
-		s.Command[i] = subStr
+	for i, cmd := range s.Commands {
+		for j, subStr := range cmd {
+			regex := regexp.MustCompile(`\$[1-9][0-9]*`)
+			subStr = regex.ReplaceAllStringFunc(subStr, func(str string) string {
+				j, err := strconv.Atoi(strings.Trim(str, "$"))
+				if err != nil {
+					log.Fatal(err)
+				}
+				return (*args)[j-1]
+			})
+			s.Commands[i][j] = subStr
+		}
 	}
 	return nil
 }

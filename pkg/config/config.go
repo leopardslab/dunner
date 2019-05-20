@@ -19,21 +19,17 @@ import (
 
 var log = logger.Log
 
-type DirMount struct {
-	Src      string `yaml:"src"`
-	Dest     string `yaml:"dest"`
-	ReadOnly bool   `yaml:"read-only"`
-}
-
 // Task describes a single task to be run in a docker container
 type Task struct {
-	Name    string   `yaml:"name"`
-	Image   string   `yaml:"image"`
-	SubDir  string   `yaml:"dir"`
-	Command []string `yaml:"command"`
-	Envs    []string `yaml:"envs"`
-	Mounts  []string `yaml:"mounts"`
-	Args    []string `yaml:"args"`
+	Name     string     `yaml:"name"`
+	Image    string     `yaml:"image"`
+	SubDir   string     `yaml:"dir"`
+	Command  []string   `yaml:"command"`
+	Commands [][]string `yaml:"commands"`
+	Envs     []string   `yaml:"envs"`
+	Mounts   []string   `yaml:"mounts"`
+	Follow   string     `yaml:"follow"`
+	Args     []string   `yaml:"args"`
 }
 
 // Configs describes the parsed information from the dunner file
