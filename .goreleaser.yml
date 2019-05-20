@@ -1,0 +1,63 @@
+# Goreleaser documentation at http://goreleaser.com
+project_name: dunner
+builds:
+- env:
+    - CGO_ENABLED=0
+  goos:
+    - linux
+    - darwin
+    - windows
+  goarch:
+    - 386
+    - amd64
+    - arm
+    - arm64
+archives:
+- replacements:
+    386: i386
+    amd64: x86_64
+checksum:
+  name_template: '{{ .ProjectName }}_checksums.txt'
+changelog:
+  sort: asc
+  filters:
+    exclude:
+    - '^docs:'
+    - '^test:'
+    - Merge pull request
+    - Merge branch
+    - Update readme
+snapshot:
+  name_template: "{{.ProjectName}}_{{.Tag}}"
+
+brew:
+  github:
+    owner: leopardslab
+    name: homebrew-dunner
+  folder: Formula
+  homepage:  https://github.com/leopardslab/Dunner
+  description: A Docker based task runner tool
+  test: |
+    system "#{bin}/dunner version"
+
+nfpm:
+  name_template: '{{ .ProjectName }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
+  homepage:  https://github.com/leopardslab/Dunner
+  description: A Docker based task runner tool
+  license: MIT
+  formats:
+  - deb
+  - rpm
+  dependencies:
+  - git
+  recommends:
+  - rpm
+snapcraft:
+  name_template: '{{ .ProjectName }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
+  summary: A Docker based task runner tool
+  description: |
+    Dunner is a task runner tool like Grunt but used Docker images like CircleCI do. | 
+    You can define tasks and steps of the tasks in your `.dunner.yaml` file and then run these steps with `Dunner do taskname`
+  grade: stable
+  confinement: devmode
+  publish: false
