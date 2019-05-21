@@ -21,12 +21,13 @@ setup: install
 	@go get -u golang.org/x/lint/golint
 
 install: 
-	@$(DEP) ensure
+	@$(DEP) ensure -v
 
 build: install
 	@$(GOINSTALL) -ldflags "-X main.version=$(VERSION)-$(SHA) -s"
 
-ci: test
+ci: build fmt lint vet
+	@go test -v $(ALL_PACKAGES) -race -coverprofile=coverage.txt -covermode=atomic
 
 test: build
 	@go test -v $(ALL_PACKAGES)
