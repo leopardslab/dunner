@@ -1,40 +1,167 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"strings"
 
 	"github.com/docker/docker/api/types/mount"
+	"github.com/go-playground/locales/en"
+	ut "github.com/go-playground/universal-translator"
 	"github.com/joho/godotenv"
 	"github.com/leopardslab/dunner/internal/logger"
+	"github.com/leopardslab/dunner/internal/util"
 	"github.com/leopardslab/dunner/pkg/docker"
 	"github.com/spf13/viper"
+	"gopkg.in/go-playground/validator.v9"
+	en_translations "gopkg.in/go-playground/validator.v9/translations/en"
 	yaml "gopkg.in/yaml.v2"
 )
 
 var log = logger.Log
 
+var (
+	uni                     *ut.UniversalTranslator
+	govalidator             *validator.Validate
+	trans                   ut.Translator
+	defaultPermissionMode   = "r"
+	validDirPermissionModes = []string{defaultPermissionMode, "wr", "rw", "w"}
+)
+
+type contextKey string
+
+var configsKey = contextKey("dunnerConfigs")
+
+type customValidation struct {
+	tag          string
+	translation  string
+	validationFn func(context.Context, validator.FieldLevel) bool
+}
+
+var customValidations = []customValidation{
+	{
+		tag:          "mountdir",
+		translation:  "mount directory '{0}' is invalid. Check format is '<valid_src_dir>:<valid_dest_dir>:<mode>' and has right permission level",
+		validationFn: ValidateMountDir,
+	},
+}
+
 // Task describes a single task to be run in a docker container
 type Task struct {
 	Name     string     `yaml:"name"`
-	Image    string     `yaml:"image"`
+	Image    string     `yaml:"image" validate:"required"`
 	SubDir   string     `yaml:"dir"`
-	Command  []string   `yaml:"command"`
+	Command  []string   `yaml:"command" validate:"omitempty,dive,required"`
 	Commands [][]string `yaml:"commands"`
 	Envs     []string   `yaml:"envs"`
-	Mounts   []string   `yaml:"mounts"`
+	Mounts   []string   `yaml:"mounts" validate:"omitempty,dive,min=1,mountdir"`
 	Follow   string     `yaml:"follow"`
 	Args     []string   `yaml:"args"`
 }
 
 // Configs describes the parsed information from the dunner file
 type Configs struct {
-	Tasks map[string][]Task
+	Tasks map[string][]Task `validate:"required,min=1,dive,keys,required,endkeys,required,min=1,required"`
+}
+
+// Validate validates config and returns errors.
+func (configs *Configs) Validate() []error {
+	err := initValidator(customValidations)
+	if err != nil {
+		return []error{err}
+	}
+	valErrs := govalidator.Struct(configs)
+	errs := formatErrors(valErrs, "")
+	ctx := context.WithValue(context.Background(), configsKey, configs)
+
+	// Each task is validated separately so that task name can be added in error messages
+	for taskName, tasks := range configs.Tasks {
+		taskValErrs := govalidator.VarCtx(ctx, tasks, "dive")
+		errs = append(errs, formatErrors(taskValErrs, taskName)...)
+	}
+	return errs
+}
+
+func formatErrors(valErrs error, taskName string) []error {
+	var errs []error
+	if valErrs != nil {
+		if _, ok := valErrs.(*validator.InvalidValidationError); ok {
+			errs = append(errs, valErrs)
+		} else {
+			for _, e := range valErrs.(validator.ValidationErrors) {
+				if taskName == "" {
+					errs = append(errs, fmt.Errorf(e.Translate(trans)))
+				} else {
+					errs = append(errs, fmt.Errorf("task '%s': %s", taskName, e.Translate(trans)))
+				}
+			}
+		}
+	}
+	return errs
+}
+
+func initValidator(customValidations []customValidation) error {
+	govalidator = validator.New()
+	govalidator.RegisterTagNameFunc(func(fld reflect.StructField) string {
+		name := strings.SplitN(fld.Tag.Get("yaml"), ",", 2)[0]
+		if name == "-" {
+			return ""
+		}
+		return name
+	})
+
+	// Register default translators
+	translator := en.New()
+	uni = ut.New(translator, translator)
+	var translatorFound bool
+	trans, translatorFound = uni.GetTranslator("en")
+	if !translatorFound {
+		return fmt.Errorf("failed to initialize validator with translator")
+	}
+	en_translations.RegisterDefaultTranslations(govalidator, trans)
+
+	// Register Custom validators and translations
+	for _, t := range customValidations {
+		err := govalidator.RegisterValidationCtx(t.tag, t.validationFn)
+		if err != nil {
+			return fmt.Errorf("failed to register validation: %s", err.Error())
+		}
+		err = govalidator.RegisterTranslation(t.tag, trans, registrationFunc(t.tag, t.translation), translateFunc)
+		if err != nil {
+			return fmt.Errorf("failed to register translations: %s", err.Error())
+		}
+	}
+	return nil
+}
+
+// ValidateMountDir verifies that mount values are in proper format <src>:<dest>:<mode>
+// Format should match, <mode> is optional which is `readOnly` by default and `src` directory exists in host machine
+func ValidateMountDir(ctx context.Context, fl validator.FieldLevel) bool {
+	value := fl.Field().String()
+	f := func(c rune) bool { return c == ':' }
+	mountValues := strings.FieldsFunc(value, f)
+	if len(mountValues) != 3 {
+		mountValues = append(mountValues, defaultPermissionMode)
+	}
+	if len(mountValues) != 3 {
+		return false
+	}
+	validPerm := false
+	for _, perm := range validDirPermissionModes {
+		if mountValues[2] == perm {
+			validPerm = true
+		}
+	}
+	if !validPerm {
+		return false
+	}
+	return util.DirExists(mountValues[0])
 }
 
 // GetConfigs reads and parses tasks from the dunner file
@@ -122,21 +249,10 @@ func DecodeMount(mounts []string, step *docker.Step) error {
 			strings.Trim(strings.Trim(m, `'`), `"`),
 			":",
 		)
-		if len(arr) != 3 && len(arr) != 2 {
-			return fmt.Errorf(
-				`config: invalid format for mount %s`,
-				m,
-			)
-		}
 		var readOnly = true
 		if len(arr) == 3 {
 			if arr[2] == "wr" || arr[2] == "w" {
 				readOnly = false
-			} else if arr[2] != "r" {
-				return fmt.Errorf(
-					`config: invalid format of read-write mode for mount '%s'`,
-					m,
-				)
 			}
 		}
 		src, err := filepath.Abs(joinPathRelToHome(arr[0]))
@@ -157,7 +273,24 @@ func DecodeMount(mounts []string, step *docker.Step) error {
 
 func joinPathRelToHome(p string) string {
 	if p[0] == '~' {
-		return path.Join(os.Getenv("HOME"), strings.Trim(p, "~"))
+		return path.Join(util.HomeDir, strings.Trim(p, "~"))
 	}
 	return p
+}
+
+func registrationFunc(tag string, translation string) validator.RegisterTranslationsFunc {
+	return func(ut ut.Translator) (err error) {
+		if err = ut.Add(tag, translation, true); err != nil {
+			return
+		}
+		return
+	}
+}
+
+func translateFunc(ut ut.Translator, fe validator.FieldError) string {
+	t, err := ut.T(fe.Tag(), reflect.ValueOf(fe.Value()).String(), fe.Param())
+	if err != nil {
+		return fe.(error).Error()
+	}
+	return t
 }
