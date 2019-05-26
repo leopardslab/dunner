@@ -34,7 +34,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:2239c4f8af92a5d5e65341b8537e799208cb442a67db36740ebb82996dce5e32"
+  digest = "1:15cce32b1a36005d784c500eaef4727a3d969ca9cebfe5aeda8b61b2db9d8836"
   name = "github.com/docker/docker"
   packages = [
     "api",
@@ -61,7 +61,7 @@
     "pkg/term/windows",
   ]
   pruneopts = "UT"
-  revision = "3042254a87274ff5e9561f2da1a986a703dfc60f"
+  revision = "34b56728ed7101c6b3cc0405f5fd6351073a8253"
 
 [[projects]]
   digest = "1:811c86996b1ca46729bad2724d4499014c4b9effd05ef8c71b852aad90deb0ce"
@@ -90,6 +90,26 @@
   pruneopts = "UT"
   revision = "c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9"
   version = "v1.4.7"
+
+[[projects]]
+  digest = "1:fd9d04d4fe18d02ecd2cdd0b8335a3c27210b10a9a5b92b9f01ac3caf8648e36"
+  name = "github.com/go-playground/locales"
+  packages = [
+    ".",
+    "currency",
+    "en",
+  ]
+  pruneopts = "UT"
+  revision = "f63010822830b6fe52288ee52d5a1151088ce039"
+  version = "v0.12.1"
+
+[[projects]]
+  digest = "1:e022cf244bcac1b6ef933f1a2e0adcf6a6dfd7b872d8d41e4d4179bb09a87cbc"
+  name = "github.com/go-playground/universal-translator"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "b32fa301c9fe55953584134cb6853a13c87ec0a1"
+  version = "v0.16.0"
 
 [[projects]]
   digest = "1:48092bf6632f55839850666c33469f546f6d45fdbd59a66759ec12e84d853dc2"
@@ -155,6 +175,14 @@
   pruneopts = "UT"
   revision = "f55edac94c9bbba5d6182a4be46d86a2c9b5b50e"
   version = "v1.0.2"
+
+[[projects]]
+  digest = "1:6782ffc812e8e700e6952ede1e60487ff1fd9da489eff762985be662a7cfc431"
+  name = "github.com/leodido/go-urn"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "70078a794e8ea4b497ba7c19a78cd60f90ccf0f4"
+  version = "v1.1.0"
 
 [[projects]]
   digest = "1:5a0ef768465592efca0412f7e838cdc0826712f8447e70e6ccc52eb441e9ab13"
@@ -283,18 +311,18 @@
     "proxy",
   ]
   pruneopts = "UT"
-  revision = "a4d6f7feada510cc50e69a37b484cb0fdc6b7876"
+  revision = "3ec19112720433827bbce8be9342797f5a6aaaf9"
 
 [[projects]]
   branch = "master"
-  digest = "1:646036a04e163f383d101f40e36fd3354676c7dcccc226d825200a6b9509727a"
+  digest = "1:a63ab7381e8941204bf91ce0bbdcb9f47767de756f98209a6a059dcbd52d57b6"
   name = "golang.org/x/sys"
   packages = [
     "unix",
     "windows",
   ]
   pruneopts = "UT"
-  revision = "a5b02f93d862f065920dd6a40dddc66b60d0dec4"
+  revision = "87c872767d25fb96dfe96c794fd028b38a08440b"
 
 [[projects]]
   digest = "1:1093f2eb4b344996604f7d8b29a16c5b22ab9e1b25652140d3fede39f640d5cd"
@@ -313,11 +341,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:fc5df4cb84cdf639ef702c176a50a9ee08ea3e68ebd67519c0f4f963c7d82978"
+  digest = "1:583a0c80f5e3a9343d33aea4aead1e1afcc0043db66fdf961ddd1fe8cd3a4faf"
   name = "google.golang.org/genproto"
   packages = ["googleapis/rpc/status"]
   pruneopts = "UT"
-  revision = "b515fa19cec88c32f305a962f34ae60068947aea"
+  revision = "d00d292a067ce1aa0017b40ca75437b42461fa61"
 
 [[projects]]
   digest = "1:4a251721b698c0e6285aec21d4ba3f79ddeccd903690144461b360ea7f948106"
@@ -329,6 +357,17 @@
   pruneopts = "UT"
   revision = "25c4f928eaa6d96443009bd842389fb4fa48664e"
   version = "v1.20.1"
+
+[[projects]]
+  digest = "1:d9ed69c1d4d528e4a7779accc3ee070e68760cdd822f69ff2cf8ae0f677afbe2"
+  name = "gopkg.in/go-playground/validator.v9"
+  packages = [
+    ".",
+    "translations/en",
+  ]
+  pruneopts = "UT"
+  revision = "46b4b1e301c24cac870ffcb4ba5c8a703d1ef475"
+  version = "v9.28.0"
 
 [[projects]]
   digest = "1:4d2e5a73dc1500038e504a8d78b986630e3626dc027bc030ba5c75da257cdb96"
@@ -349,10 +388,14 @@
     "github.com/docker/docker/pkg/jsonmessage",
     "github.com/docker/docker/pkg/stdcopy",
     "github.com/docker/docker/pkg/term",
+    "github.com/go-playground/locales/en",
+    "github.com/go-playground/universal-translator",
     "github.com/joho/godotenv",
     "github.com/sirupsen/logrus",
     "github.com/spf13/cobra",
     "github.com/spf13/viper",
+    "gopkg.in/go-playground/validator.v9",
+    "gopkg.in/go-playground/validator.v9/translations/en",
     "gopkg.in/yaml.v2",
   ]
   solver-name = "gps-cdcl"
