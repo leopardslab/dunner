@@ -32,11 +32,11 @@ func setup(t *testing.T) func() {
 	}
 }
 
-func TestInitializeSuccess(t *testing.T) {
+func TestInitProjectSuccess(t *testing.T) {
 	revert := setup(t)
 	defer revert()
 	var filename = ".test_dunner.yml"
-	if err := initProject(filename); err != nil {
+	if err := InitProject(filename); err != nil {
 		t.Errorf("Failed to open dunner task file %s: %s", filename, err.Error())
 	}
 
@@ -63,7 +63,22 @@ func TestInitializeWhenFileExists(t *testing.T) {
 	createFile(t, filename, internal.DefaultTaskFileContents)
 
 	expected := fmt.Sprintf("%s already exists", filename)
-	err := initProject(filename)
+	err := InitProject(filename)
+	if err == nil {
+		t.Errorf("expected: %s, got nil", expected)
+	}
+	if expected != err.Error() {
+		t.Errorf("expected: %s, got: %s", expected, err.Error())
+	}
+}
+
+func TestInitializeFilenameIsInvalid(t *testing.T) {
+	revert := setup(t)
+	defer revert()
+	var filename = "#Q$EJL_doesntexist/.test_dunner.yml"
+
+	expected := fmt.Sprintf("open %s: no such file or directory", filename)
+	err := InitProject(filename)
 	if err == nil {
 		t.Errorf("expected: %s, got nil", expected)
 	}
