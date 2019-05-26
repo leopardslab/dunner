@@ -60,9 +60,9 @@ This work is still in progress. See the development plan.
 - [x] Ability to install as a Snap package
 
 ### [`v2.0`](https://github.com/leopardslab/dunner/milestone/3) 
-- [ ] Ability to Dry Run 
-- [ ] Ability to verfiy the `.dunner.yaml` file
-- [ ] Ability to define multiple commands for the same step
+- [x] Ability to Dry Run 
+- [x] Ability to verfiy the `.dunner.yaml` file
+- [x] Ability to define multiple commands for the same step
 - [ ] Ability to install as a Deb package
 - [ ] Ability to install as a RPM package
 - [ ] Ability to install as a Brew package
