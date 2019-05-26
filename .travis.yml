@@ -1,37 +1,32 @@
 language: go
-
 go:
-  - "1.11.x"
-  - master
-
+- 1.11.x
+- master
 env:
   global:
-    - DEP_VERSION="0.5.0"
-    - PATH=/snap/bin:$PATH
-
+  - DEP_VERSION="0.5.0"
+  - PATH=/snap/bin:$PATH
 services:
-  - docker
+- docker
 addons:
   apt:
     packages:
     - rpm
     - snapd
-
 before_install:
-  - curl -L -s https://github.com/golang/dep/releases/download/v${DEP_VERSION}/dep-linux-amd64 -o $GOPATH/bin/dep
-  - chmod +x $GOPATH/bin/dep
-
+- openssl aes-256-cbc -K $encrypted_12c8071d2874_key -iv $encrypted_12c8071d2874_iv
+  -in snap.login.enc -out snap.login -d
+- curl -L -s https://github.com/golang/dep/releases/download/v${DEP_VERSION}/dep-linux-amd64
+  -o $GOPATH/bin/dep
+- chmod +x $GOPATH/bin/dep
 install:
-  - make setup
-  - sudo snap install snapcraft --classic
-
+- make setup
+- sudo snap install snapcraft --classic
 script:
-  - make ci
-
+- make ci
 after_success:
-  - bash <(curl -s https://codecov.io/bash)
-  - test -n "$TRAVIS_TAG" && snapcraft login --with snap.login
-
+- bash <(curl -s https://codecov.io/bash)
+- test -n "$TRAVIS_TAG" && snapcraft login --with snap.login
 deploy:
 - provider: script
   skip_cleanup: true
@@ -39,5 +34,5 @@ deploy:
   verbose: true
   on:
     tags: true
-    condition: $TRAVIS_OS_NAME = linux
+    condition: "$TRAVIS_OS_NAME = linux"
     master: true
