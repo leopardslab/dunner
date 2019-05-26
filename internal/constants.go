@@ -10,10 +10,10 @@ build:
     commands:
       - ["npm", "--version"]
       - ["npm", "install"]
-    # List of directories that are to be mounted on the container
+    # (Optional) List of directories that are to be mounted on the container
     mounts:
       - /tmp:/tmp:w
-    # Set any environment variables to be exported in the container
+    # (Optional) Set any environment variables to be exported in the container
     envs:
       - PERM=775
 `
