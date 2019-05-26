@@ -2,6 +2,7 @@ package dunner
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -30,6 +31,14 @@ func Do(_ *cobra.Command, args []string) {
 	configs, err := config.GetConfigs(dunnerFile)
 	if err != nil {
 		log.Fatal(err)
+	}
+	errs := configs.Validate()
+	if len(errs) != 0 {
+		fmt.Println("Validation failed with following errors:")
+		for _, err := range errs {
+			fmt.Println(err.Error())
+		}
+		os.Exit(1)
 	}
 
 	execTask(configs, args[0], args[1:])
@@ -98,6 +107,10 @@ func process(configs *config.Configs, s *docker.Step, wg *sync.WaitGroup, args [
 	results, err := (*s).Exec()
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if results == nil {
+		return
 	}
 
 	for _, res := range *results {

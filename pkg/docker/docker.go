@@ -141,35 +141,38 @@ func (step Step) Exec() (*[]Result, error) {
 	}()
 
 	var results []Result
-	if multipleCommands {
-		for _, cmd := range step.Commands {
-			r, err := runCmd(ctx, cli, resp.ID, cmd)
+	if dryRun := viper.GetBool("Dry-run"); !dryRun {
+		if multipleCommands {
+			for _, cmd := range step.Commands {
+				r, err := runCmd(ctx, cli, resp.ID, cmd)
+				if err != nil {
+					log.Fatal(err)
+				}
+				results = append(results, *r)
+			}
+		} else {
+			statusCh, errCh := cli.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
+			select {
+			case err = <-errCh:
+				if err != nil {
+					log.Fatal(err)
+				}
+			case <-statusCh:
+			}
+
+			out, err := cli.ContainerLogs(ctx, resp.ID, types.ContainerLogsOptions{
+				ShowStdout: true,
+				ShowStderr: true,
+			})
 			if err != nil {
 				log.Fatal(err)
 			}
-			results = append(results, *r)
-		}
-	} else {
-		statusCh, errCh := cli.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
-		select {
-		case err = <-errCh:
-			if err != nil {
-				log.Fatal(err)
-			}
-		case <-statusCh:
-		}
 
-		out, err := cli.ContainerLogs(ctx, resp.ID, types.ContainerLogsOptions{
-			ShowStdout: true,
-			ShowStderr: true,
-		})
-		if err != nil {
-			log.Fatal(err)
+			results = []Result{*extractResult(out, step.Command)}
 		}
-
-		results = []Result{*extractResult(out, step.Command)}
+		return &results, nil
 	}
-	return &results, nil
+	return nil, nil
 }
 
 func runCmd(ctx context.Context, cli *client.Client, containerID string, command []string) (*Result, error) {
