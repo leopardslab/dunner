@@ -34,3 +34,5 @@ coverage*
 .idea/*
 
 snap.login
+
+.DS_Store
