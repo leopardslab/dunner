@@ -12,6 +12,7 @@ builds:
     - amd64
     - arm
     - arm64
+
 archives:
 - replacements:
     386: i386
@@ -48,10 +49,7 @@ nfpm:
   formats:
   - deb
   - rpm
-  dependencies:
-  - git
-  recommends:
-  - rpm
+
 snapcraft:
   name_template: '{{ .ProjectName }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
   summary: A Docker based task runner tool
