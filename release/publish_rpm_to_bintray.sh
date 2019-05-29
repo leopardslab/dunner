@@ -2,7 +2,7 @@
 
 set -e
 
-REPO="dunner-deb"
+REPO="dunner-rpm"
 PACKAGE="dunner"
 DISTRIBUTIONS="stable"
 COMPONENTS="main"
@@ -22,13 +22,13 @@ setVersion () {
 }
 
 setUploadDirPath () {
-  UPLOADDIRPATH="pool/d/$PACKAGE"
+  UPLOADDIRPATH="$PACKAGE/$VERSION"
 }
 
-downloadDebianArtifacts() {
-  echo "Dowloading debian artifacts"
+downloadRpmArtifacts() {
+  echo "Dowloading rpm artifacts"
   FILES=$(curl -s https://api.github.com/repos/leopardslab/dunner/releases/latest \
-| grep "browser_download_url.*deb" \
+| grep "browser_download_url.*rpm" \
 | cut -d : -f 3 \
 | sed -e 's/^/https:/' \
 | tr -d '"' );
@@ -50,7 +50,7 @@ bintrayUpload () {
       ARCH="i386"
     fi
 
-    URL="https://api.bintray.com/content/leopardslab/$REPO/$PACKAGE/$VERSION/$UPLOADDIRPATH/$FILENAME;deb_distribution=$DISTRIBUTIONS;deb_component=$COMPONENTS;deb_architecture=$ARCH?publish=1&override=1"
+    URL="https://api.bintray.com/content/leopardslab/$REPO/$PACKAGE/$VERSION/$UPLOADDIRPATH/$FILENAME?publish=1&override=1"
     echo "Uploading $URL"
 
     RESPONSE_CODE=$(curl -T $FILENAME -u$USER:$API_KEY $URL -I -s -w "%{http_code}" -o /dev/null);
@@ -94,11 +94,11 @@ printMeta () {
 }
 
 cleanArtifacts () {
-  rm -f "$(pwd)/*.deb"
+  rm -f "$(pwd)/*.rpm"
 }
 
 cleanArtifacts
-downloadDebianArtifacts
+downloadRpmArtifacts
 setVersion
 printMeta
 setUploadDirPath

@@ -43,9 +43,25 @@ after_success:
 deploy:
 - provider: script
   skip_cleanup: true
-  script: >-
-    curl -sL https://git.io/goreleaser | bash &&
-    ./release/publish_deb_to_bintray.sh
+  script: curl -sL https://git.io/goreleaser
+  verbose: true
+  on:
+    tags: true
+    condition: "$TRAVIS_OS_NAME = linux"
+    master: true
+
+- provider: script
+  skip_cleanup: true
+  script: ./release/publish_deb_to_bintray.sh
+  verbose: true
+  on:
+    tags: true
+    condition: "$TRAVIS_OS_NAME = linux"
+    master: true
+
+- provider: script
+  skip_cleanup: true
+  script: ./release/publish_rpm_to_bintray.sh
   verbose: true
   on:
     tags: true
