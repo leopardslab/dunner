@@ -107,6 +107,28 @@ func TestConfigs_ValidateWithEmptyImageAndCommand(t *testing.T) {
 	}
 }
 
+func TestConfigs_ValidateCommandsNotEmpty(t *testing.T) {
+	tasks := make(map[string][]Task, 0)
+	task := Task{Image: "", Commands: [][]string{[]string{""}}}
+	tasks["stats"] = []Task{task}
+	configs := &Configs{Tasks: tasks}
+
+	errs := configs.Validate()
+
+	if len(errs) != 2 {
+		t.Fatalf("expected 2 errors, got %d : %s", len(errs), errs)
+	}
+
+	expected1 := "task 'stats': image is a required field"
+	expected2 := "task 'stats': commands[0][0] is a required field"
+	if errs[0].Error() != expected1 {
+		t.Fatalf("expected: %s, got: %s", expected1, errs[0].Error())
+	}
+	if errs[1].Error() != expected2 {
+		t.Fatalf("expected: %s, got: %s", expected2, errs[1].Error())
+	}
+}
+
 func TestConfigs_ValidateWithInvalidMountFormat(t *testing.T) {
 	tasks := make(map[string][]Task, 0)
 	task := getSampleTask()
@@ -202,9 +224,45 @@ func TestInitValidatorForNilTranslation(t *testing.T) {
 
 	expected := "failed to register validation: Function cannot be empty"
 	if err == nil {
-		t.Fatalf("expected %s, got %s", expected, err)
+		t.Fatalf("expected: %s, got: %s", expected, err)
 	}
 	if err.Error() != expected {
-		t.Fatalf("expected %s, got %s", expected, err.Error())
+		t.Fatalf("expected: %s, got: %s", expected, err.Error())
+	}
+}
+
+func TestConfigs_ValidateWhenTaskReferencedFromTask(t *testing.T) {
+	tasks := make(map[string][]Task, 0)
+	statsTask := Task{Image: "image_name", Follow: "cpu"}
+	cpuTask := getSampleTask()
+
+	tasks["cpu"] = []Task{cpuTask}
+	tasks["stats"] = []Task{statsTask}
+	configs := &Configs{Tasks: tasks}
+
+	errs := configs.Validate()
+
+	if errs != nil {
+		t.Fatalf("expected no errors, got %s", errs)
+	}
+}
+
+func TestConfigs_ValidateWhenFollowIsNotPresent(t *testing.T) {
+	tasks := make(map[string][]Task, 0)
+	statsTask := Task{Image: "image_name", Follow: "invalid"}
+	cpuTask := getSampleTask()
+
+	tasks["cpu"] = []Task{cpuTask}
+	tasks["stats"] = []Task{statsTask}
+	configs := &Configs{Tasks: tasks}
+
+	errs := configs.Validate()
+
+	expected := "task 'stats': follow task 'invalid' does not exist"
+	if errs == nil {
+		t.Fatalf("expected: %s, got: %s", expected, errs)
+	}
+	if len(errs) != 1 || errs[0].Error() != expected {
+		t.Fatalf("expected: %s, got: %s", expected, errs[0].Error())
 	}
 }
