@@ -1,0 +1,10 @@
+release_rpm:
+  - image: apoorvam6/ubuntu-rpm:0.0.2
+    commands:
+      - ["curl", "-O", "https://raw.githubusercontent.com/leopardslab/dunner/master/release/publish_rpm_to_bintray.sh"]
+      - ["chmod", "a+x", "./publish_rpm_to_bintray.sh"]
+      - ["rpmbuild", "--version"]
+      - ["./publish_rpm_to_bintray.sh"]
+    envs:
+      - USER=`$BITBUCKET_USER`
+      - API_KEY=`$BITBUCKET_API_KEY`

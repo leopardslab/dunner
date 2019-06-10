@@ -4,8 +4,6 @@ set -e
 
 REPO="dunner-rpm"
 PACKAGE="dunner"
-DISTRIBUTIONS="stable"
-COMPONENTS="main"
 
 if [ -z "$USER" ]; then
   echo "USER is not set"
@@ -32,11 +30,14 @@ downloadRpmArtifacts() {
 | cut -d : -f 3 \
 | sed -e 's/^/https:/' \
 | tr -d '"' );
-  echo $FILES
+  echo "$FILES"
   for i in $FILES; do
-    RESPONSE_CODE=$(curl -O $i)
-    if [ "$(echo $RESPONSE_CODE | head -c2)" != "20" ]; then
+    RESPONSE_CODE=$(curl -O  -w "%{response_code}" "$i")
+    echo "$RESPONSE_CODE"
+    code=$(echo "$RESPONSE_CODE" | head -c2)
+    if [[ $code != "20" && $code != "30" ]]; then
       echo "Unable to download $i HTTP response code: $RESPONSE_CODE"
+      exit 1
     fi
   done;
   echo "Finished downloading"
@@ -54,7 +55,7 @@ bintrayUpload () {
     echo "Uploading $URL"
 
     RESPONSE_CODE=$(curl -T $FILENAME -u$USER:$API_KEY $URL -I -s -w "%{http_code}" -o /dev/null);
-    if [ "$(echo $RESPONSE_CODE | head -c2)" != "20" ]; then
+    if [[ "$(echo $RESPONSE_CODE | head -c2)" != "20" ]]; then
       echo "Unable to upload, HTTP response code: $RESPONSE_CODE"
       exit 1
     fi
@@ -105,3 +106,4 @@ setUploadDirPath
 bintrayUpload
 snooze
 bintraySetDownloads
+

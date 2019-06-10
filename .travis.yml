@@ -61,7 +61,7 @@ deploy:
 
 - provider: script
   skip_cleanup: true
-  script: ./release/publish_rpm_to_bintray.sh
+  script: cd release && $GOPATH/bin/dunner do release_rpm
   verbose: true
   on:
     tags: true
