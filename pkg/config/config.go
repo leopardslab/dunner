@@ -50,6 +50,11 @@ var customValidations = []customValidation{
 		translation:  "mount directory '{0}' is invalid. Check format is '<valid_src_dir>:<valid_dest_dir>:<mode>' and has right permission level",
 		validationFn: ValidateMountDir,
 	},
+	{
+		tag:          "follow_exist",
+		translation:  "follow task '{0}' does not exist",
+		validationFn: ValidateFollowTaskPresent,
+	},
 }
 
 // Task describes a single task to be run in a docker container
@@ -58,10 +63,10 @@ type Task struct {
 	Image    string     `yaml:"image" validate:"required"`
 	SubDir   string     `yaml:"dir"`
 	Command  []string   `yaml:"command" validate:"omitempty,dive,required"`
-	Commands [][]string `yaml:"commands"`
+	Commands [][]string `yaml:"commands" validate:"omitempty,dive,omitempty,dive,required"`
 	Envs     []string   `yaml:"envs"`
 	Mounts   []string   `yaml:"mounts" validate:"omitempty,dive,min=1,mountdir"`
-	Follow   string     `yaml:"follow"`
+	Follow   string     `yaml:"follow" validate:"omitempty,follow_exist"`
 	Args     []string   `yaml:"args"`
 }
 
@@ -162,6 +167,18 @@ func ValidateMountDir(ctx context.Context, fl validator.FieldLevel) bool {
 		return false
 	}
 	return util.DirExists(mountValues[0])
+}
+
+// ValidateFollowTaskPresent verifies that referenceed task exists
+func ValidateFollowTaskPresent(ctx context.Context, fl validator.FieldLevel) bool {
+	followTask := strings.TrimSpace(fl.Field().String())
+	configs := ctx.Value(configsKey).(*Configs)
+	for taskName := range configs.Tasks {
+		if taskName == followTask {
+			return true
+		}
+	}
+	return false
 }
 
 // GetConfigs reads and parses tasks from the dunner file
