@@ -45,7 +45,7 @@ nfpm:
   name_template: '{{ .ProjectName }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
   homepage:  https://github.com/leopardslab/Dunner
   description: A Docker based task runner tool
-  maintainer: Milindu Sanoj Kumarage <agentmilindu@gmail.com>
+  maintainer: LeopardsLab Community
   license: MIT
   formats:
   - deb
