@@ -335,7 +335,7 @@ func TestDecodeMount(t *testing.T) {
 
 func TestDecodeMountWithEnvironmentVariable(t *testing.T) {
 	step := &docker.Step{}
-	mounts := []string{"`$HOME`:/app"}
+	mounts := []string{"`$HOME`:`$HOME`"}
 
 	err := DecodeMount(mounts, step)
 
@@ -349,6 +349,9 @@ func TestDecodeMountWithEnvironmentVariable(t *testing.T) {
 		t.Fatalf("expected ExtMounts to be of length 1, got %d", len((*step).ExtMounts))
 	}
 	if (*step).ExtMounts[0].Source != util.HomeDir {
-		t.Fatalf("expected ExtMounts to be %s, got %s", util.HomeDir, (*step).ExtMounts[0].Source)
+		t.Fatalf("expected ExtMounts Source to be %s, got %s", util.HomeDir, (*step).ExtMounts[0].Source)
+	}
+	if (*step).ExtMounts[0].Target != util.HomeDir {
+		t.Fatalf("expected ExtMounts Source to be %s, got %s", util.HomeDir, (*step).ExtMounts[0].Target)
 	}
 }

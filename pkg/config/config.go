@@ -283,7 +283,6 @@ func parseEnv(configs *Configs) error {
 // DecodeMount parses mount format for directories to be mounted as bind volumes
 func DecodeMount(mounts []string, step *docker.Step) error {
 	for _, m := range mounts {
-
 		arr := strings.Split(
 			strings.Trim(strings.Trim(m, `'`), `"`),
 			":",
