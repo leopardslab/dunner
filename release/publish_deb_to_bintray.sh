@@ -34,8 +34,9 @@ downloadDebianArtifacts() {
 | tr -d '"' );
   echo $FILES
   for i in $FILES; do
-    RESPONSE_CODE=$(curl -O $i)
-    if [ "$(echo $RESPONSE_CODE | head -c2)" != "20" ]; then
+    RESPONSE_CODE=$(curl -O  -w "%{response_code}" "$i")
+    code=$(echo "$RESPONSE_CODE" | head -c2)
+    if [ $code != "20" ] && [ $code != "30" ]; then
       echo "Unable to download $i HTTP response code: $RESPONSE_CODE"
     fi
   done;
@@ -53,8 +54,9 @@ bintrayUpload () {
     URL="https://api.bintray.com/content/leopardslab/$REPO/$PACKAGE/$VERSION/$UPLOADDIRPATH/$FILENAME;deb_distribution=$DISTRIBUTIONS;deb_component=$COMPONENTS;deb_architecture=$ARCH?publish=1&override=1"
     echo "Uploading $URL"
 
-    RESPONSE_CODE=$(curl -T $FILENAME -u$USER:$API_KEY $URL -I -s -w "%{http_code}" -o /dev/null);
-    if [ "$(echo $RESPONSE_CODE | head -c2)" != "20" ]; then
+    RESPONSE_CODE=$(curl -T $FILENAME -u$USER:$API_KEY $URL -I -s -w "%{response_code}" -o /dev/null);
+    code=$(echo "$RESPONSE_CODE" | head -c2)
+    if [ $code != "20" ] && [ $code != "30" ]; then
       echo "Unable to upload, HTTP response code: $RESPONSE_CODE"
       exit 1
     fi

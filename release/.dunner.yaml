@@ -8,3 +8,5 @@ release_dunner:
     envs:
       - USER=`$BITBUCKET_USER`
       - API_KEY=`$BITBUCKET_API_KEY`
+    mounts:
+      - ".:/app"

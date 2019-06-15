@@ -35,7 +35,7 @@ downloadRpmArtifacts() {
     RESPONSE_CODE=$(curl -O  -w "%{response_code}" "$i")
     echo "$RESPONSE_CODE"
     code=$(echo "$RESPONSE_CODE" | head -c2)
-    if [[ $code != "20" && $code != "30" ]]; then
+    if [ $code != "20" ] && [ $code != "30" ]; then
       echo "Unable to download $i HTTP response code: $RESPONSE_CODE"
       exit 1
     fi
