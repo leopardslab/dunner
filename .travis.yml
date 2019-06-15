@@ -44,27 +44,10 @@ after_success:
 - test -n "$TRAVIS_TAG" && snapcraft login --with snap.login
 
 deploy:
-- provider: script
-  skip_cleanup: true
-  script: curl -sL https://git.io/goreleaser | bash
-  verbose: true
-  on:
-    tags: true
-    condition: "$TRAVIS_OS_NAME = linux"
-    master: true
 
 - provider: script
   skip_cleanup: true
-  script: ./release/publish_deb_to_bintray.sh
-  verbose: true
-  on:
-    tags: true
-    condition: "$TRAVIS_OS_NAME = linux"
-    master: true
-
-- provider: script
-  skip_cleanup: true
-  script: cd release && $GOPATH/bin/dunner do release_rpm
+  script: $GOPATH/bin/dunner do release_dunner -t release/.dunner.yaml
   verbose: true
   on:
     tags: true
