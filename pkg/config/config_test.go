@@ -6,6 +6,9 @@ import (
 	"os"
 	"reflect"
 	"testing"
+
+	"github.com/leopardslab/dunner/internal/util"
+	"github.com/leopardslab/dunner/pkg/docker"
 )
 
 func TestGetConfigs(t *testing.T) {
@@ -107,28 +110,6 @@ func TestConfigs_ValidateWithEmptyImageAndCommand(t *testing.T) {
 	}
 }
 
-func TestConfigs_ValidateCommandsNotEmpty(t *testing.T) {
-	tasks := make(map[string][]Task, 0)
-	task := Task{Image: "", Commands: [][]string{[]string{""}}}
-	tasks["stats"] = []Task{task}
-	configs := &Configs{Tasks: tasks}
-
-	errs := configs.Validate()
-
-	if len(errs) != 2 {
-		t.Fatalf("expected 2 errors, got %d : %s", len(errs), errs)
-	}
-
-	expected1 := "task 'stats': image is a required field"
-	expected2 := "task 'stats': commands[0][0] is a required field"
-	if errs[0].Error() != expected1 {
-		t.Fatalf("expected: %s, got: %s", expected1, errs[0].Error())
-	}
-	if errs[1].Error() != expected2 {
-		t.Fatalf("expected: %s, got: %s", expected2, errs[1].Error())
-	}
-}
-
 func TestConfigs_ValidateWithInvalidMountFormat(t *testing.T) {
 	tasks := make(map[string][]Task, 0)
 	task := getSampleTask()
@@ -142,13 +123,28 @@ func TestConfigs_ValidateWithInvalidMountFormat(t *testing.T) {
 		t.Fatalf("expected 1 error, got %d : %s", len(errs), errs)
 	}
 
-	expected := "task 'stats': mount directory 'invalid_dir' is invalid. Check format is '<valid_src_dir>:<valid_dest_dir>:<mode>' and has right permission level"
+	expected := "task 'stats': mount directory 'invalid_dir' is invalid. Check format is '<valid_src_dir>:<valid_dest_dir>:<optional_mode>' and has right permission level"
 	if errs[0].Error() != expected {
 		t.Fatalf("expected: %s, got: %s", expected, errs[0].Error())
 	}
 }
 
 func TestConfigs_ValidateWithValidMountDirectory(t *testing.T) {
+	tasks := make(map[string][]Task, 0)
+	task := getSampleTask()
+	wd, _ := os.Getwd()
+	task.Mounts = []string{fmt.Sprintf("%s:%s:w", wd, wd)}
+	tasks["stats"] = []Task{task}
+	configs := &Configs{Tasks: tasks}
+
+	errs := configs.Validate()
+
+	if errs != nil {
+		t.Fatalf("expected no errors, got %s", errs)
+	}
+}
+
+func TestConfigs_ValidateWithMountDirFromEnv(t *testing.T) {
 	tasks := make(map[string][]Task, 0)
 	task := getSampleTask()
 	wd, _ := os.Getwd()
@@ -188,7 +184,7 @@ func TestConfigs_ValidateWithInvalidMode(t *testing.T) {
 
 	errs := configs.Validate()
 
-	expected := fmt.Sprintf("task 'stats': mount directory '%s' is invalid. Check format is '<valid_src_dir>:<valid_dest_dir>:<mode>' and has right permission level", task.Mounts[0])
+	expected := fmt.Sprintf("task 'stats': mount directory '%s' is invalid. Check format is '<valid_src_dir>:<valid_dest_dir>:<optional_mode>' and has right permission level", task.Mounts[0])
 	if errs[0].Error() != expected {
 		t.Fatalf("expected: %s, got: %s", expected, errs[0].Error())
 	}
@@ -207,7 +203,63 @@ func TestConfigs_ValidateWithInvalidMountDirectory(t *testing.T) {
 		t.Fatalf("expected 1 error, got %d : %s", len(errs), errs)
 	}
 
-	expected := "task 'stats': mount directory 'blah:foo:w' is invalid. Check format is '<valid_src_dir>:<valid_dest_dir>:<mode>' and has right permission level"
+	expected := "task 'stats': mount directory 'blah:foo:w' is invalid. Check if source directory path exists."
+	if errs[0].Error() != expected {
+		t.Fatalf("expected: %s, got: %s", expected, errs[0].Error())
+	}
+}
+
+func TestConfigs_ValidateWithValidEnvInMountDir(t *testing.T) {
+	os.Setenv("TEST_DIR", util.HomeDir)
+	defer os.Setenv("TEST_DIR", "")
+	tasks := make(map[string][]Task, 0)
+	task := getSampleTask()
+	task.Mounts = []string{"`$TEST_DIR`:foo:w"}
+	tasks["stats"] = []Task{task}
+	configs := &Configs{Tasks: tasks}
+
+	errs := configs.Validate()
+
+	if len(errs) != 0 {
+		t.Fatalf("expected 0 errors, got %d : %s", len(errs), errs)
+	}
+}
+
+func TestConfigs_ValidateWithEnvInMountDir_Invalid(t *testing.T) {
+	os.Setenv("TEST_DIR", "/test_invalid")
+	defer os.Setenv("TEST_DIR", "")
+	tasks := make(map[string][]Task, 0)
+	task := getSampleTask()
+	task.Mounts = []string{"`$TEST_DIR`:foo:w"}
+	tasks["stats"] = []Task{task}
+	configs := &Configs{Tasks: tasks}
+
+	errs := configs.Validate()
+
+	if len(errs) != 1 {
+		t.Fatalf("expected 1 error, got %d : %s", len(errs), errs)
+	}
+
+	expected := "task 'stats': mount directory '`$TEST_DIR`:foo:w' is invalid. Check if source directory path exists."
+	if errs[0].Error() != expected {
+		t.Fatalf("expected: %s, got: %s", expected, errs[0].Error())
+	}
+}
+
+func TestConfigs_ValidateWithNonExistingEnvInMountDir(t *testing.T) {
+	tasks := make(map[string][]Task, 0)
+	task := getSampleTask()
+	task.Mounts = []string{"`$TEST_DIR_DUNNER`:foo:w"}
+	tasks["stats"] = []Task{task}
+	configs := &Configs{Tasks: tasks}
+
+	errs := configs.Validate()
+
+	if len(errs) != 1 {
+		t.Fatalf("expected 1 error, got %d : %s", len(errs), errs)
+	}
+
+	expected := "task 'stats': mount directory '`$TEST_DIR_DUNNER`:foo:w' is invalid. Check if source directory path exists."
 	if errs[0].Error() != expected {
 		t.Fatalf("expected: %s, got: %s", expected, errs[0].Error())
 	}
@@ -224,45 +276,79 @@ func TestInitValidatorForNilTranslation(t *testing.T) {
 
 	expected := "failed to register validation: Function cannot be empty"
 	if err == nil {
-		t.Fatalf("expected: %s, got: %s", expected, err)
+		t.Fatalf("expected %s, got %s", expected, err)
 	}
 	if err.Error() != expected {
-		t.Fatalf("expected: %s, got: %s", expected, err.Error())
+		t.Fatalf("expected %s, got %s", expected, err.Error())
 	}
 }
 
-func TestConfigs_ValidateWhenTaskReferencedFromTask(t *testing.T) {
-	tasks := make(map[string][]Task, 0)
-	statsTask := Task{Image: "image_name", Follow: "cpu"}
-	cpuTask := getSampleTask()
+var lookupEnvtests = []struct {
+	in  string
+	out string
+	err error
+}{
+	{"", "", nil},
+	{"foo", "foo", nil},
+	{"/foo/bar", "/foo/bar", nil},
+	{"/foo/`$bar", "/foo/`$bar", nil},
+	{util.HomeDir, util.HomeDir, nil},
+	{"`$HOME`", util.HomeDir, nil},
+	{"`$HOME`/foo", util.HomeDir + "/foo", nil},
+	{"`$HOME`/foo/`$HOME`", util.HomeDir + "/foo/" + util.HomeDir, nil},
+	{"`$INVALID_TEST`/foo", "`$INVALID_TEST`/foo", fmt.Errorf("Could not find environment variable 'INVALID_TEST'")},
+}
 
-	tasks["cpu"] = []Task{cpuTask}
-	tasks["stats"] = []Task{statsTask}
-	configs := &Configs{Tasks: tasks}
-
-	errs := configs.Validate()
-
-	if errs != nil {
-		t.Fatalf("expected no errors, got %s", errs)
+func TestLookUpDirectory(t *testing.T) {
+	for _, tt := range lookupEnvtests {
+		t.Run(tt.in, func(t *testing.T) {
+			parsedDir, err := lookupDirectory(tt.in)
+			if parsedDir != tt.out {
+				t.Errorf("got %q, want %q", parsedDir, tt.out)
+			}
+			if !reflect.DeepEqual(tt.err, err) {
+				t.Errorf("got %q, want %q", err, tt.err)
+			}
+		})
 	}
 }
 
-func TestConfigs_ValidateWhenFollowIsNotPresent(t *testing.T) {
-	tasks := make(map[string][]Task, 0)
-	statsTask := Task{Image: "image_name", Follow: "invalid"}
-	cpuTask := getSampleTask()
+func TestDecodeMount(t *testing.T) {
+	step := &docker.Step{}
+	mounts := []string{fmt.Sprintf("%s:/app:r", util.HomeDir)}
 
-	tasks["cpu"] = []Task{cpuTask}
-	tasks["stats"] = []Task{statsTask}
-	configs := &Configs{Tasks: tasks}
+	err := DecodeMount(mounts, step)
 
-	errs := configs.Validate()
-
-	expected := "task 'stats': follow task 'invalid' does not exist"
-	if errs == nil {
-		t.Fatalf("expected: %s, got: %s", expected, errs)
+	if err != nil {
+		t.Fatalf("expected no error, got %s", err.Error())
 	}
-	if len(errs) != 1 || errs[0].Error() != expected {
-		t.Fatalf("expected: %s, got: %s", expected, errs[0].Error())
+	if (*step).ExtMounts == nil {
+		t.Fatalf("expected ExtMounts to be set, got nil")
+	}
+	if len((*step).ExtMounts) != 1 {
+		t.Fatalf("expected ExtMounts to be of length 1, got %d", len((*step).ExtMounts))
+	}
+	if (*step).ExtMounts[0].Source != util.HomeDir {
+		t.Fatalf("expected ExtMounts to be %s, got %s", util.HomeDir, (*step).ExtMounts[0].Source)
+	}
+}
+
+func TestDecodeMountWithEnvironmentVariable(t *testing.T) {
+	step := &docker.Step{}
+	mounts := []string{"`$HOME`:/app"}
+
+	err := DecodeMount(mounts, step)
+
+	if err != nil {
+		t.Fatalf("expected no error, got %s", err.Error())
+	}
+	if (*step).ExtMounts == nil {
+		t.Fatalf("expected ExtMounts to be set, got nil")
+	}
+	if len((*step).ExtMounts) != 1 {
+		t.Fatalf("expected ExtMounts to be of length 1, got %d", len((*step).ExtMounts))
+	}
+	if (*step).ExtMounts[0].Source != util.HomeDir {
+		t.Fatalf("expected ExtMounts to be %s, got %s", util.HomeDir, (*step).ExtMounts[0].Source)
 	}
 }
