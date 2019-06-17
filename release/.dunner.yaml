@@ -2,11 +2,11 @@ release_dunner:
   - image: apoorvam6/ubuntu-rpm:0.0.2
     commands:
       - ["rpmbuild", "--version"]
-      - ["curl", "-sL", "https://git.io/goreleaser | bash"]
+      - ["curl", "-sL", "https://git.io/goreleaser", "|", "bash", "-s", "--", "--rm-dist"]
       - ["./release/publish_rpm_to_bintray.sh"]
       - ["./release/publish_deb_to_bintray.sh"]
     envs:
-      - USER=`$BITBUCKET_USER`
-      - API_KEY=`$BITBUCKET_API_KEY`
+      - USER=`$BINTRAY_USER`
+      - API_KEY=`$BINTRAY_API_KEY`
     mounts:
       - ".:/app"

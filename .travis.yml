@@ -47,6 +47,15 @@ deploy:
 
 - provider: script
   skip_cleanup: true
+  script: curl -sL https://git.io/goreleaser | bash -s -- --config=.snap_goreleaser.yml --rm-dist
+  verbose: true
+  on:
+    tags: true
+    condition: "$TRAVIS_OS_NAME = linux"
+    master: true
+
+- provider: script
+  skip_cleanup: true
   script: $GOPATH/bin/dunner do release_dunner -t release/.dunner.yaml
   verbose: true
   on:
