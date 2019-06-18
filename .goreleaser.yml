@@ -32,7 +32,7 @@ snapshot:
   name_template: "{{.ProjectName}}_{{.Tag}}"
 
 release:
-  draft: true
+  draft: false
   name_template: "{{.ProjectName}} v{{.Version}}"
 
 brew:
