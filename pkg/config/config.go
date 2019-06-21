@@ -25,6 +25,7 @@ import (
 )
 
 var log = logger.Log
+var dotEnv map[string]string
 
 var (
 	uni                     *ut.UniversalTranslator
@@ -47,13 +48,18 @@ type customValidation struct {
 var customValidations = []customValidation{
 	{
 		tag:          "mountdir",
-		translation:  "mount directory '{0}' is invalid. Check format is '<valid_src_dir>:<valid_dest_dir>:<mode>' and has right permission level",
+		translation:  "mount directory '{0}' is invalid. Check format is '<valid_src_dir>:<valid_dest_dir>:<optional_mode>' and has right permission level",
 		validationFn: ValidateMountDir,
 	},
 	{
 		tag:          "follow_exist",
 		translation:  "follow task '{0}' does not exist",
 		validationFn: ValidateFollowTaskPresent,
+	},
+	{
+		tag:          "parsedir",
+		translation:  "mount directory '{0}' is invalid. Check if source directory path exists.",
+		validationFn: ParseMountDir,
 	},
 }
 
@@ -65,7 +71,7 @@ type Task struct {
 	Command  []string   `yaml:"command" validate:"omitempty,dive,required"`
 	Commands [][]string `yaml:"commands" validate:"omitempty,dive,omitempty,dive,required"`
 	Envs     []string   `yaml:"envs"`
-	Mounts   []string   `yaml:"mounts" validate:"omitempty,dive,min=1,mountdir"`
+	Mounts   []string   `yaml:"mounts" validate:"omitempty,dive,min=1,mountdir,parsedir"`
 	Follow   string     `yaml:"follow" validate:"omitempty,follow_exist"`
 	Args     []string   `yaml:"args"`
 }
@@ -146,7 +152,7 @@ func initValidator(customValidations []customValidation) error {
 }
 
 // ValidateMountDir verifies that mount values are in proper format <src>:<dest>:<mode>
-// Format should match, <mode> is optional which is `readOnly` by default and `src` directory exists in host machine
+// Format should match, <mode> is optional which is `readOnly` by default
 func ValidateMountDir(ctx context.Context, fl validator.FieldLevel) bool {
 	value := fl.Field().String()
 	f := func(c rune) bool { return c == ':' }
@@ -163,10 +169,7 @@ func ValidateMountDir(ctx context.Context, fl validator.FieldLevel) bool {
 			validPerm = true
 		}
 	}
-	if !validPerm {
-		return false
-	}
-	return util.DirExists(mountValues[0])
+	return validPerm
 }
 
 // ValidateFollowTaskPresent verifies that referenceed task exists
@@ -181,6 +184,21 @@ func ValidateFollowTaskPresent(ctx context.Context, fl validator.FieldLevel) boo
 	return false
 }
 
+// ParseMountDir verifies that source directory exists and parses the environment variables used in the config
+func ParseMountDir(ctx context.Context, fl validator.FieldLevel) bool {
+	value := fl.Field().String()
+	f := func(c rune) bool { return c == ':' }
+	mountValues := strings.FieldsFunc(value, f)
+	if len(mountValues) == 0 {
+		return false
+	}
+	parsedDir, err := lookupDirectory(mountValues[0])
+	if err != nil {
+		return false
+	}
+	return util.DirExists(parsedDir)
+}
+
 // GetConfigs reads and parses tasks from the dunner file
 func GetConfigs(filename string) (*Configs, error) {
 	fileContents, err := ioutil.ReadFile(filename)
@@ -193,6 +211,7 @@ func GetConfigs(filename string) (*Configs, error) {
 		log.Fatal(err)
 	}
 
+	loadDotEnv()
 	if err := parseEnv(&configs); err != nil {
 		log.Fatal(err)
 	}
@@ -200,13 +219,16 @@ func GetConfigs(filename string) (*Configs, error) {
 	return &configs, nil
 }
 
-func parseEnv(configs *Configs) error {
+func loadDotEnv() {
 	file := viper.GetString("DotenvFile")
-	envs, err := godotenv.Read(file)
+	var err error
+	dotEnv, err = godotenv.Read(file)
 	if err != nil {
 		log.Warn(err)
 	}
+}
 
+func parseEnv(configs *Configs) error {
 	for k, tasks := range (*configs).Tasks {
 		for j, task := range tasks {
 			for i, envVar := range task.Envs {
@@ -238,14 +260,14 @@ func parseEnv(configs *Configs) error {
 					if v, isSet := os.LookupEnv(key); isSet {
 						val = v
 					}
-					if v, isSet := envs[key]; isSet {
+					if v, isSet := dotEnv[key]; isSet {
 						val = v
 					}
 					if val == "" {
 						return fmt.Errorf(
 							`config: could not find environment variable '%v' in %s file or among host environment variables`,
 							key,
-							file,
+							viper.GetString("DotenvFile"),
 						)
 					}
 					var newEnv = str[0] + "=" + val
@@ -261,7 +283,6 @@ func parseEnv(configs *Configs) error {
 // DecodeMount parses mount format for directories to be mounted as bind volumes
 func DecodeMount(mounts []string, step *docker.Step) error {
 	for _, m := range mounts {
-
 		arr := strings.Split(
 			strings.Trim(strings.Trim(m, `'`), `"`),
 			":",
@@ -272,20 +293,51 @@ func DecodeMount(mounts []string, step *docker.Step) error {
 				readOnly = false
 			}
 		}
-		src, err := filepath.Abs(joinPathRelToHome(arr[0]))
+		parsedSrcDir, err := lookupDirectory(arr[0])
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
-		dest := arr[1]
+		parsedDestDir, err := lookupDirectory(arr[1])
+		if err != nil {
+			return err
+		}
+		src, err := filepath.Abs(joinPathRelToHome(parsedSrcDir))
+		if err != nil {
+			return err
+		}
 
 		(*step).ExtMounts = append((*step).ExtMounts, mount.Mount{
 			Type:     mount.TypeBind,
 			Source:   src,
-			Target:   dest,
+			Target:   parsedDestDir,
 			ReadOnly: readOnly,
 		})
 	}
 	return nil
+}
+
+// Replaces dir having any environment variables in form `$ENV_NAME` and returns a parsed string
+func lookupDirectory(dir string) (string, error) {
+	hostDirpattern := "`\\$(?P<name>[^`]+)`"
+	hostDirRegex := regexp.MustCompile(hostDirpattern)
+	matches := hostDirRegex.FindAllStringSubmatch(dir, -1)
+
+	parsedDir := dir
+	for _, matchArr := range matches {
+		envKey := matchArr[1]
+		var val string
+		if v, isSet := os.LookupEnv(envKey); isSet {
+			val = v
+		}
+		if v, isSet := dotEnv[envKey]; isSet {
+			val = v
+		}
+		if val == "" {
+			return dir, fmt.Errorf(`Could not find environment variable '%v'`, envKey)
+		}
+		parsedDir = strings.Replace(parsedDir, fmt.Sprintf("`$%s`", envKey), val, -1)
+	}
+	return parsedDir, nil
 }
 
 func joinPathRelToHome(p string) string {
