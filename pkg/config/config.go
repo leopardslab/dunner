@@ -1,3 +1,28 @@
+/*
+Package config is the YAML parser of the task file for Dunner.
+
+For more information on how to write a task file for Dunner, please refer to the
+following link of an article on Dunner repository's Wiki:
+https://github.com/leopardslab/dunner/dunner/wiki/User-Guide#how-to-write-a-dunner-file
+
+Usage
+
+You can use the library by creating a dunner task file. For example,
+	# .dunner.yaml
+	prepare:
+	  - image: node
+		commands:
+		  - ["node", "--version"]
+	  - image: node
+		commands:
+		  - ["npm", "install"]
+	  - image: mvn
+		commands:
+		  - ["mvn", "package"]
+
+Use `GetConfigs` method to parse the dunner task file, and `ParseEnv` method to parse environment variables file, or
+the host environment variables. The environment variables are used by invoking in the task file using backticks(`$var`).
+*/
 package config
 
 import (
@@ -65,18 +90,36 @@ var customValidations = []customValidation{
 
 // Task describes a single task to be run in a docker container
 type Task struct {
-	Name     string     `yaml:"name"`
-	Image    string     `yaml:"image" validate:"required"`
-	SubDir   string     `yaml:"dir"`
-	Command  []string   `yaml:"command" validate:"omitempty,dive,required"`
+	// Name given as string to identify the task
+	Name string `yaml:"name"`
+
+	// Image is the repo name on which Docker containers are built
+	Image string `yaml:"image" validate:"required"`
+
+	// SubDir is the primary directory on which task is to be run
+	SubDir string `yaml:"dir"`
+
+	// The command which runs on the container and exits
+	Command []string `yaml:"command" validate:"omitempty,dive,required"`
+
+	// The list of commands that are to be run in sequence
 	Commands [][]string `yaml:"commands" validate:"omitempty,dive,omitempty,dive,required"`
-	Envs     []string   `yaml:"envs"`
-	Mounts   []string   `yaml:"mounts" validate:"omitempty,dive,min=1,mountdir,parsedir"`
-	Follow   string     `yaml:"follow" validate:"omitempty,follow_exist"`
-	Args     []string   `yaml:"args"`
+
+	// The list of environment variables to be exported inside the container
+	Envs []string `yaml:"envs"`
+
+	// The directories to be mounted on the container as bind volumes
+	Mounts []string `yaml:"mounts" validate:"omitempty,dive,min=1,mountdir,parsedir"`
+
+	// The next task that must be executed if this does go successfully
+	Follow string `yaml:"follow" validate:"omitempty,follow_exist"`
+
+	// The list of arguments that are to be passed
+	Args []string `yaml:"args"`
 }
 
-// Configs describes the parsed information from the dunner file
+// Configs describes the parsed information from the dunner file. It is a map of task name as keys and the list of tasks
+// associated with it.
 type Configs struct {
 	Tasks map[string][]Task `validate:"required,min=1,dive,keys,required,endkeys,required,min=1,required"`
 }
@@ -151,8 +194,9 @@ func initValidator(customValidations []customValidation) error {
 	return nil
 }
 
-// ValidateMountDir verifies that mount values are in proper format <src>:<dest>:<mode>
-// Format should match, <mode> is optional which is `readOnly` by default
+// ValidateMountDir verifies that mount values are in proper format
+//		<source>:<destination>:<mode>
+// Format should match, <mode> is optional which is `readOnly` by default and `src` directory exists in host machine
 func ValidateMountDir(ctx context.Context, fl validator.FieldLevel) bool {
 	value := fl.Field().String()
 	f := func(c rune) bool { return c == ':' }
@@ -199,7 +243,10 @@ func ParseMountDir(ctx context.Context, fl validator.FieldLevel) bool {
 	return util.DirExists(parsedDir)
 }
 
-// GetConfigs reads and parses tasks from the dunner file
+// GetConfigs reads and parses tasks from the dunner task file.
+// The task file is unmarshalled to an object of struct `Config`
+// The default filename that is being read by Dunner during the time of execution is `dunner.yaml`,
+// but it can be changed using `--task-file` flag in the CLI.
 func GetConfigs(filename string) (*Configs, error) {
 	fileContents, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -212,7 +259,7 @@ func GetConfigs(filename string) (*Configs, error) {
 	}
 
 	loadDotEnv()
-	if err := parseEnv(&configs); err != nil {
+	if err := ParseEnv(&configs); err != nil {
 		log.Fatal(err)
 	}
 
@@ -228,7 +275,12 @@ func loadDotEnv() {
 	}
 }
 
-func parseEnv(configs *Configs) error {
+// ParseEnv parses the `.env` file as well as the host environment variables.
+// If the same variable is defined in both the `.env` file and in the host environment,
+// priority is given to the .env file.
+//
+// Note: You can change the filename of environment file (default: `.env`) using `--env-file/-e` flag in the CLI.
+func ParseEnv(configs *Configs) error {
 	for k, tasks := range (*configs).Tasks {
 		for j, task := range tasks {
 			for i, envVar := range task.Envs {
@@ -257,6 +309,8 @@ func parseEnv(configs *Configs) error {
 						1,
 					)
 					var val string
+					// Value of variable defined in environment file (default '.env') overrides
+					// the value defined in host's environment variables.
 					if v, isSet := os.LookupEnv(key); isSet {
 						val = v
 					}
@@ -280,7 +334,10 @@ func parseEnv(configs *Configs) error {
 	return nil
 }
 
-// DecodeMount parses mount format for directories to be mounted as bind volumes
+// DecodeMount parses mount format for directories to be mounted as bind volumes.
+// The format to configure a mount is
+// 		<source>:<destination>:<mode>
+// By _mode_, the file permission level is defined in two ways, viz., _read-only_ mode(`r`) and _read-write_ mode(`wr` or `w`)
 func DecodeMount(mounts []string, step *docker.Step) error {
 	for _, m := range mounts {
 		arr := strings.Split(
@@ -333,7 +390,7 @@ func lookupDirectory(dir string) (string, error) {
 			val = v
 		}
 		if val == "" {
-			return dir, fmt.Errorf(`Could not find environment variable '%v'`, envKey)
+			return dir, fmt.Errorf(`could not find environment variable '%v'`, envKey)
 		}
 		parsedDir = strings.Replace(parsedDir, fmt.Sprintf("`$%s`", envKey), val, -1)
 	}
