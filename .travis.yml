@@ -35,4 +35,5 @@ deploy:
   on:
     tags: true
     condition: "$TRAVIS_OS_NAME = linux"
-    master: true
+    branch: master
+    go: 1.11.x
