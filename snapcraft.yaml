@@ -5,7 +5,7 @@ description: |
   Dunner is a task runner tool like Grunt but used Docker images like CircleCI do. | 
   You can define tasks and steps of the tasks in your `.dunner.yaml` file and then run these steps with `Dunner do taskname`
 grade: stable
-confinement: classic
+confinement: strict
 base: core18
 
 parts:
@@ -20,3 +20,5 @@ parts:
 apps:
   dunner:
     command: bin/dunner
+    plugs:
+     - personal-files
