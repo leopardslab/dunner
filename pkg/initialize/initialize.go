@@ -71,11 +71,11 @@ func InitWithRecipe(filename string, templateName string) error {
 }
 
 var getMetadataURL = func(templateName string) string {
-	return fmt.Sprintf("%s%s/metadata.yml", global.DunnerCookbookBaseURL, templateName)
+	return fmt.Sprintf("%s%s/metadata.yml", global.DunnerCookbookRecipesURL, templateName)
 }
 
 var getDunnerTaskURLOfRecipe = func(templateName string) string {
-	return fmt.Sprintf("%s%s/.dunner.yaml", global.DunnerCookbookBaseURL, templateName)
+	return fmt.Sprintf("%s%s/.dunner.yaml", global.DunnerCookbookRecipesURL, templateName)
 }
 
 func getRecipeMetadata(metadataURL string) (*recipeMetadata, error) {

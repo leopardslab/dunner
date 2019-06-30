@@ -164,13 +164,13 @@ func TestGetRecipeMetadataSuccess(t *testing.T) {
 }
 
 func TestConstructURLs(t *testing.T) {
-	expectedMetadataURL := fmt.Sprintf("%sfoo/metadata.yml", global.DunnerCookbookBaseURL)
+	expectedMetadataURL := fmt.Sprintf("%sfoo/metadata.yml", global.DunnerCookbookRecipesURL)
 	got := getMetadataURL("foo")
 	if got != expectedMetadataURL {
 		t.Errorf("expected URL %s, got %s", expectedMetadataURL, got)
 	}
 
-	expectedDunnerTaskURL := fmt.Sprintf("%sfoo/.dunner.yaml", global.DunnerCookbookBaseURL)
+	expectedDunnerTaskURL := fmt.Sprintf("%sfoo/.dunner.yaml", global.DunnerCookbookRecipesURL)
 	got = getDunnerTaskURLOfRecipe("foo")
 	if got != expectedDunnerTaskURL {
 		t.Errorf("expected URL %s, got %s", expectedDunnerTaskURL, got)

@@ -3,5 +3,6 @@ package global
 // VERSION is to hold the Dunner version
 var (
 	VERSION               string
-	DunnerCookbookBaseURL = "https://raw.githubusercontent.com/apoorvam/dunner-cookbook/master/recipes/"
+	DunnerCookbookRecipesURL = "https://raw.githubusercontent.com/leopardslab/dunner-cookbook/master/recipes/"
+	DunnerCookbookListURL = "https://raw.githubusercontent.com/leopardslab/dunner-cookbook/master/cookbook.yml"
 )
