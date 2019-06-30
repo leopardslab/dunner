@@ -10,6 +10,8 @@ import (
 
 	"github.com/leopardslab/dunner/internal"
 	"github.com/leopardslab/dunner/pkg/config"
+	"github.com/leopardslab/dunner/pkg/global"
+
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -161,6 +163,20 @@ func TestGetRecipeMetadataSuccess(t *testing.T) {
 	}
 }
 
+func TestConstructURLs(t *testing.T) {
+	expectedMetadataURL := fmt.Sprintf("%sfoo/metadata.yml", global.DunnerCookbookBaseURL)
+	got := getMetadataURL("foo")
+	if got != expectedMetadataURL {
+		t.Errorf("expected URL %s, got %s", expectedMetadataURL, got)
+	}
+
+	expectedDunnerTaskURL := fmt.Sprintf("%sfoo/.dunner.yaml", global.DunnerCookbookBaseURL)
+	got = getDunnerTaskURLOfRecipe("foo")
+	if got != expectedDunnerTaskURL {
+		t.Errorf("expected URL %s, got %s", expectedDunnerTaskURL, got)
+	}
+}
+
 func TestInitProjectWithRecipe(t *testing.T) {
 	revert := setup(t)
 	defer revert()
@@ -175,7 +191,7 @@ func TestInitProjectWithRecipe(t *testing.T) {
 	getDunnerTaskURLOfRecipe = func(string) string { return server.URL }
 	defer server.Close()
 
-	err := InitWithRecipe(".test_init_dunner.yaml", "foo")
+	err := InitProject(".test_init_dunner.yaml", []string{"foo"})
 
 	if err != nil {
 		t.Errorf("Expected no error, got %s", err.Error())

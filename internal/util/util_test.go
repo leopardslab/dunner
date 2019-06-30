@@ -1,6 +1,7 @@
 package util
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -140,6 +141,25 @@ func TestGetUrlContents(t *testing.T) {
 	}
 	if string(fileContents) != expectedFileContents {
 		t.Fatalf("Downloaded file contents not matching. Expected %s, got %s", expectedFileContents, string(fileContents))
+	}
+}
+
+func TestGetUrlContents404(t *testing.T) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "", http.StatusNotFound)
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(handler))
+	defer server.Close()
+
+	fileContents, err := GetURLContents(server.URL)
+
+	expected := fmt.Sprintf("Error downloading file %s: 404 Not Found", server.URL)
+	if fileContents != nil {
+		t.Fatalf("Expected no fileContents, got %s", fileContents)
+	}
+	if err == nil || err.Error() != expected {
+		t.Fatalf("Expected error %s, got %s", expected, err)
 	}
 }
 
