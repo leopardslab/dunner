@@ -1,3 +1,7 @@
+/*
+Package docker is the interface of dunner to communicate with the Docker Engine through
+methods wrapping over Docker client library.
+*/
 package docker
 
 import (
@@ -24,29 +28,34 @@ import (
 
 var log = logger.Log
 
-// Step describes the information required to run one task in docker container
+// Step describes the information required to run one task in docker container. It is very similar to the concept
+// of docker build of a 'Dockerfile' and then a sequence of commands to be executed in `docker run`.
 type Step struct {
-	Task      string
-	Name      string
-	Image     string
-	Command   []string
-	Commands  [][]string
-	Env       []string
-	WorkDir   string
-	Volumes   map[string]string
-	ExtMounts []mount.Mount
-	Follow    string
-	Args      []string
+	Task      string            // The name of the task that the step corresponds to
+	Name      string            // Name given to this step for identification purpose
+	Image     string            // Image is the repo name on which Docker containers are built
+	Command   []string          // The command which runs on the container and exits
+	Commands  [][]string        // The list of commands that are to be run in sequence
+	Env       []string          // The list of environment variables to be exported inside the container
+	WorkDir   string            // The primary directory on which task is to be run
+	Volumes   map[string]string // Volumes that are to be attached to the container
+	ExtMounts []mount.Mount     // The directories to be mounted on the container as bind volumes
+	Follow    string            // The next task that must be executed if this does go successfully
+	Args      []string          // The list of arguments that are to be passed
 }
 
-// Result stores the output of commands run using docker exec
+// Result stores the output of commands run using `docker exec`
 type Result struct {
 	Command string
 	Output  string
 	Error   string
 }
 
-// Exec method is used to execute the task described in the corresponding step
+// Exec method is used to execute the task described in the corresponding step. It returns an object of the
+// struct `Result` with the corresponding output and/or error.
+//
+// Note: A working internet connection is mandatory for the Docker container to contact Docker Hub to find the image and/or
+// corresponding updates.
 func (step Step) Exec() (*[]Result, error) {
 
 	var (
@@ -168,7 +177,7 @@ func (step Step) Exec() (*[]Result, error) {
 				log.Fatal(err)
 			}
 
-			results = []Result{*extractResult(out, step.Command)}
+			results = []Result{*ExtractResult(out, step.Command)}
 		}
 		return &results, nil
 	}
@@ -195,10 +204,12 @@ func runCmd(ctx context.Context, cli *client.Client, containerID string, command
 	}
 	defer resp.Close()
 
-	return extractResult(resp.Reader, command), nil
+	return ExtractResult(resp.Reader, command), nil
 }
 
-func extractResult(reader io.Reader, command []string) *Result {
+// ExtractResult can parse output and/or error corresponding to the command passed as an argument,
+// from an io.Reader and convert to an object of strings.
+func ExtractResult(reader io.Reader, command []string) *Result {
 
 	var out, errOut bytes.Buffer
 	if _, err := stdcopy.StdCopy(&out, &errOut, reader); err != nil {

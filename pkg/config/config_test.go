@@ -296,7 +296,7 @@ var lookupEnvtests = []struct {
 	{"`$HOME`", util.HomeDir, nil},
 	{"`$HOME`/foo", util.HomeDir + "/foo", nil},
 	{"`$HOME`/foo/`$HOME`", util.HomeDir + "/foo/" + util.HomeDir, nil},
-	{"`$INVALID_TEST`/foo", "`$INVALID_TEST`/foo", fmt.Errorf("Could not find environment variable 'INVALID_TEST'")},
+	{"`$INVALID_TEST`/foo", "`$INVALID_TEST`/foo", fmt.Errorf("could not find environment variable 'INVALID_TEST'")},
 }
 
 func TestLookUpDirectory(t *testing.T) {
