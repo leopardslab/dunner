@@ -7,13 +7,13 @@ PACKAGE="dunner"
 DISTRIBUTIONS="stable"
 COMPONENTS="main"
 
-if [ -z "$USER" ]; then
-  echo "USER is not set"
+if [ -z "$BINTRAY_USER" ]; then
+  echo "BINTRAY_USER is not set"
   exit 1
 fi
 
-if [ -z "$API_KEY" ]; then
-  echo "API_KEY is not set"
+if [ -z "$BINTRAY_API_KEY" ]; then
+  echo "BINTRAY_API_KEY is not set"
   exit 1
 fi
 
@@ -54,7 +54,7 @@ bintrayUpload () {
     URL="https://api.bintray.com/content/leopardslab/$REPO/$PACKAGE/$VERSION/$UPLOADDIRPATH/$FILENAME;deb_distribution=$DISTRIBUTIONS;deb_component=$COMPONENTS;deb_architecture=$ARCH?publish=1&override=1"
     echo "Uploading $URL"
 
-    RESPONSE_CODE=$(curl -T $FILENAME -u$USER:$API_KEY $URL -I -s -w "%{response_code}" -o /dev/null);
+    RESPONSE_CODE=$(curl -T $FILENAME -u$BINTRAY_USER:$BINTRAY_API_KEY $URL -I -s -w "%{response_code}" -o /dev/null);
     code=$(echo "$RESPONSE_CODE" | head -c2)
     if [ $code != "20" ] && [ $code != "30" ]; then
       echo "Unable to upload, HTTP response code: $RESPONSE_CODE"
@@ -74,7 +74,7 @@ bintraySetDownloads () {
     URL="https://api.bintray.com/file_metadata/leopardslab/$REPO/$UPLOADDIRPATH/$FILENAME"
 
     echo "Putting $FILENAME in $PACKAGE's download list"
-    RESPONSE_CODE=$(curl -X PUT -d "{ \"list_in_downloads\": true }" -H "Content-Type: application/json" -u$USER:$API_KEY $URL -s -w "%{http_code}" -o /dev/null);
+    RESPONSE_CODE=$(curl -X PUT -d "{ \"list_in_downloads\": true }" -H "Content-Type: application/json" -u$BINTRAY_USER:$BINTRAY_API_KEY $URL -s -w "%{http_code}" -o /dev/null);
 
     if [ "$(echo $RESPONSE_CODE | head -c2)" != "20" ]; then
         echo "Unable to put in download list, HTTP response code: $RESPONSE_CODE"
