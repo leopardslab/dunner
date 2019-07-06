@@ -1,3 +1,6 @@
+/*
+Package dunner consists of the main executing functions for the Dunner application.
+*/
 package dunner
 
 import (
@@ -41,10 +44,11 @@ func Do(_ *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	execTask(configs, args[0], args[1:])
+	ExecTask(configs, args[0], args[1:])
 }
 
-func execTask(configs *config.Configs, taskName string, args []string) {
+// ExecTask processes the parsed tasks from the dunner task file
+func ExecTask(configs *config.Configs, taskName string, args []string) {
 	var async = viper.GetBool("Async")
 	var wg sync.WaitGroup
 	for _, stepDefinition := range configs.Tasks[taskName] {
@@ -68,16 +72,17 @@ func execTask(configs *config.Configs, taskName string, args []string) {
 		}
 
 		if async {
-			go process(configs, &step, &wg, args)
+			go Process(configs, &step, &wg, args)
 		} else {
-			process(configs, &step, &wg, args)
+			Process(configs, &step, &wg, args)
 		}
 	}
 
 	wg.Wait()
 }
 
-func process(configs *config.Configs, s *docker.Step, wg *sync.WaitGroup, args []string) {
+// Process executes a single step of the task.
+func Process(configs *config.Configs, s *docker.Step, wg *sync.WaitGroup, args []string) {
 	var async = viper.GetBool("Async")
 	if async {
 		defer wg.Done()
@@ -87,16 +92,16 @@ func process(configs *config.Configs, s *docker.Step, wg *sync.WaitGroup, args [
 		if async {
 			wg.Add(1)
 			go func(wg *sync.WaitGroup) {
-				execTask(configs, s.Follow, s.Args)
+				ExecTask(configs, s.Follow, s.Args)
 				wg.Done()
 			}(wg)
 		} else {
-			execTask(configs, s.Follow, s.Args)
+			ExecTask(configs, s.Follow, s.Args)
 		}
 		return
 	}
 
-	if err := passArgs(s, &args); err != nil {
+	if err := PassArgs(s, &args); err != nil {
 		log.Fatal(err)
 	}
 
@@ -129,7 +134,8 @@ func process(configs *config.Configs, s *docker.Step, wg *sync.WaitGroup, args [
 	}
 }
 
-func passArgs(s *docker.Step, args *[]string) error {
+// PassArgs replaces argument variables,of the form '`$d`', where d is a number, with dth argument.
+func PassArgs(s *docker.Step, args *[]string) error {
 	for i, cmd := range s.Commands {
 		for j, subStr := range cmd {
 			regex := regexp.MustCompile(`\$[1-9][0-9]*`)

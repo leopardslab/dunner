@@ -12,6 +12,7 @@ builds:
     - amd64
     - arm
     - arm64
+
 archives:
 - replacements:
     386: i386
@@ -30,8 +31,12 @@ changelog:
 snapshot:
   name_template: "{{.ProjectName}}_{{.Tag}}"
 
-brew:
-  github:
+release:
+  draft: false
+  name_template: "{{.ProjectName}} v{{.Version}}"
+
+brews:
+- github:
     owner: leopardslab
     name: homebrew-dunner
   folder: Formula
@@ -44,20 +49,22 @@ nfpm:
   name_template: '{{ .ProjectName }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
   homepage:  https://github.com/leopardslab/Dunner
   description: A Docker based task runner tool
+  maintainer: LeopardsLab Community
   license: MIT
   formats:
   - deb
   - rpm
-  dependencies:
-  - git
-  recommends:
-  - rpm
-snapcraft:
-  name_template: '{{ .ProjectName }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
+
+snapcrafts:
+- name_template: '{{ .ProjectName }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
   summary: A Docker based task runner tool
   description: |
     Dunner is a task runner tool like Grunt but used Docker images like CircleCI do. | 
     You can define tasks and steps of the tasks in your `.dunner.yaml` file and then run these steps with `Dunner do taskname`
   grade: stable
-  confinement: classic
+  confinement: strict
+  base: core18
   publish: true
+  apps:
+    dunner:
+      plugs: ["home"]

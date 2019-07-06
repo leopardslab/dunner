@@ -14,11 +14,12 @@ func init() {
 }
 
 var validateCmd = &cobra.Command{
-	Use:   "validate",
-	Short: "Validate the dunner task file `.dunner.yaml`",
-	Long:  "You can validate task file `.dunner.yaml` with this command to see if there are any parse errors",
-	Run:   Validate,
-	Args:  cobra.MinimumNArgs(0),
+	Use:     "validate",
+	Short:   "Validate the dunner task file `.dunner.yaml`",
+	Long:    "You can validate task file `.dunner.yaml` with this command to see if there are any parse errors",
+	Run:     Validate,
+	Args:    cobra.NoArgs,
+	Aliases: []string{"v"},
 }
 
 // Validate command invoked from command line, validates the dunner task file. If there are errors, it fails with non-zero exit code.
