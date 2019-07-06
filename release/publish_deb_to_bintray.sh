@@ -54,13 +54,15 @@ bintrayUpload () {
     URL="https://api.bintray.com/content/leopardslab/$REPO/$PACKAGE/$VERSION/$UPLOADDIRPATH/$FILENAME;deb_distribution=$DISTRIBUTIONS;deb_component=$COMPONENTS;deb_architecture=$ARCH?publish=1&override=1"
     echo "Uploading $URL"
 
-    RESPONSE_CODE=$(curl -T $FILENAME -u$USER:$API_KEY $URL -I -s -w "%{response_code}" -o /dev/null);
-    code=$(echo "$RESPONSE_CODE" | head -c2)
-    if [ $code != "20" ] && [ $code != "30" ]; then
-      echo "Unable to upload, HTTP response code: $RESPONSE_CODE"
+    RESPONSE=$(curl -T $FILENAME -u$USER:$API_KEY "$URL" -I -s -w "HTTPSTATUS:%{http_code}");
+    HTTP_STATUS=$(echo $RESPONSE | tr -d '\n' | sed -e 's/.*HTTPSTATUS://')
+    echo "$RESPONSE"
+
+    if [ $HTTP_STATUS != "20" ] && [ $HTTP_STATUS != "30" ]; then
+      echo "Unable to upload, HTTP response code: $HTTP_STATUS"
       exit 1
     fi
-    echo "HTTP response code: $RESPONSE_CODE"
+    echo "HTTP response code: $HTTP_STATUS"
   done;
 }
 
@@ -74,13 +76,15 @@ bintraySetDownloads () {
     URL="https://api.bintray.com/file_metadata/leopardslab/$REPO/$UPLOADDIRPATH/$FILENAME"
 
     echo "Putting $FILENAME in $PACKAGE's download list"
-    RESPONSE_CODE=$(curl -X PUT -d "{ \"list_in_downloads\": true }" -H "Content-Type: application/json" -u$USER:$API_KEY $URL -s -w "%{http_code}" -o /dev/null);
+    RESPONSE=$(curl -X PUT -d "{ \"list_in_downloads\": true }" -H "Content-Type: application/json" -u$USER:$API_KEY "$URL" -s -w "HTTPSTATUS:%{http_code}");
+    HTTP_STATUS=$(echo $RESPONSE | tr -d '\n' | sed -e 's/.*HTTPSTATUS://')
+    echo "$RESPONSE"
 
-    if [ "$(echo $RESPONSE_CODE | head -c2)" != "20" ]; then
-        echo "Unable to put in download list, HTTP response code: $RESPONSE_CODE"
+    if [ $HTTP_STATUS != "20" ]; then
+        echo "Unable to put in download list, HTTP response: $RESPONSE"
         exit 1
     fi
-    echo "HTTP response code: $RESPONSE_CODE"
+    echo "HTTP response code: $HTTP_STATUS"
   done
 }
 
