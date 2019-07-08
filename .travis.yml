@@ -59,3 +59,13 @@ deploy:
     condition: "$TRAVIS_OS_NAME = linux"
     branch: master
     go: 1.11.x
+
+- provider: script
+  skip_cleanup: true
+  script: bash release/publish_rpm_to_bintray.sh
+  verbose: true
+  on:
+    tags: true
+    condition: "$TRAVIS_OS_NAME = linux"
+    branch: master
+    go: 1.11.x
