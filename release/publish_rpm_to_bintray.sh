@@ -4,6 +4,7 @@ set -e
 
 REPO="dunner-rpm"
 PACKAGE="dunner"
+GORELEASER_DIR="dist"
 
 if [ -z "$USER" ]; then
   echo "USER is not set"
@@ -16,49 +17,39 @@ if [ -z "$API_KEY" ]; then
 fi
 
 setVersion () {
+  echo "Fetching latest dunner version from Github releases.."
   VERSION=$(curl --silent "https://api.github.com/repos/leopardslab/dunner/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/');
+  echo "Latest dunner version: $VERSION"
+  if [ "$VERSION" == "" ]; then
+    exit 1
+  fi
+  VERSIONNUMBER=$(echo $VERSION | cut -d 'v' -f 2)
+  FILES=( "dunner_$(echo $VERSIONNUMBER)_linux_arm.rpm" "dunner_$(echo $VERSIONNUMBER)_linux_arm64.rpm" "dunner_$(echo $VERSIONNUMBER)_linux_i386.rpm" "dunner_$(echo $VERSIONNUMBER)_linux_x86_64.rpm" )
 }
 
 setUploadDirPath () {
   UPLOADDIRPATH="$PACKAGE/$VERSION"
 }
 
-downloadRpmArtifacts() {
-  echo "Dowloading rpm artifacts"
-  FILES=$(curl -s https://api.github.com/repos/leopardslab/dunner/releases/latest \
-| grep "browser_download_url.*rpm" \
-| cut -d : -f 3 \
-| sed -e 's/^/https:/' \
-| tr -d '"' );
-  echo "$FILES"
-  for i in $FILES; do
-    RESPONSE_CODE=$(curl -O  -w "%{response_code}" "$i")
-    echo "$RESPONSE_CODE"
-    code=$(echo "$RESPONSE_CODE" | head -c2)
-    if [ $code != "20" ] && [ $code != "30" ]; then
-      echo "Unable to download $i HTTP response code: $RESPONSE_CODE"
-      exit 1
-    fi
-  done;
-  echo "Finished downloading"
-}
-
 bintrayUpload () {
-  for i in $FILES; do
-    FILENAME=${i##*/}
+  for i in "${FILES[@]}"; do
+    FILENAME=$i
     ARCH=$(echo ${FILENAME##*_} | cut -d '.' -f 1)
-    if [ $ARCH == "386" ]; then
+    if [ "$ARCH" == "386" ]; then
       ARCH="i386"
+    fi
+    if [ "$ARCH" == "64" ]; then
+      ARCH="x86_64"
     fi
 
     URL="https://api.bintray.com/content/leopardslab/$REPO/$PACKAGE/$VERSION/$UPLOADDIRPATH/$FILENAME?publish=1&override=1"
     echo "Uploading $URL"
 
-    RESPONSE=$(curl -T $FILENAME -u$USER:$API_KEY "$URL" -I -s -w "HTTPSTATUS:%{http_code}");
+    RESPONSE=$(curl -T ./$GORELEASER_DIR/$FILENAME -u$USER:$API_KEY "$URL" -I -s -w "HTTPSTATUS:%{http_code}");
     HTTP_STATUS=$(echo $RESPONSE | tr -d '\n' | sed -e 's/.*HTTPSTATUS://')
     echo "$RESPONSE"
 
-    if [[ $HTTP_STATUS != "20" ]]; then
+    if [[ "$(echo $HTTP_STATUS | head -c2)" != "20" ]]; then
       echo "Unable to upload, HTTP response code: $HTTP_STATUS"
       exit 1
     fi
@@ -67,11 +58,14 @@ bintrayUpload () {
 }
 
 bintraySetDownloads () {
-  for i in $FILES; do
-    FILENAME=${i##*/}
+  for i in "${FILES[@]}"; do
+    FILENAME=$i
     ARCH=$(echo ${FILENAME##*_} | cut -d '.' -f 1)
-    if [ $ARCH == "386" ]; then
+    if [ "$ARCH" == "386" ]; then
       ARCH="i386"
+    fi
+    if [ "$ARCH" == "64" ]; then
+      ARCH="x86_64"
     fi
     URL="https://api.bintray.com/file_metadata/leopardslab/$REPO/$UPLOADDIRPATH/$FILENAME"
 
@@ -80,7 +74,7 @@ bintraySetDownloads () {
     HTTP_STATUS=$(echo $RESPONSE | tr -d '\n' | sed -e 's/.*HTTPSTATUS://')
     echo "$RESPONSE"
 
-    if [ $HTTPSTATUS != "20" ]; then
+    if [ "$(echo $HTTP_STATUS | head -c2)" != "20" ]; then
         echo "Unable to put in download list, HTTP response code: $HTTP_STATUS"
         exit 1
     fi
@@ -99,12 +93,6 @@ printMeta () {
     echo "Version to be uploaded: $VERSION"
 }
 
-cleanArtifacts () {
-  rm -f "$(pwd)/*.rpm"
-}
-
-cleanArtifacts
-downloadRpmArtifacts
 setVersion
 printMeta
 setUploadDirPath
