@@ -8,13 +8,13 @@ DISTRIBUTIONS="stable"
 COMPONENTS="main"
 GORELEASER_DIR="dist"
 
-if [ -z "$USER" ]; then
-  echo "USER is not set"
+if [ -z "$BINTRAY_USER" ]; then
+  echo "BINTRAY_USER is not set"
   exit 1
 fi
 
-if [ -z "$API_KEY" ]; then
-  echo "API_KEY is not set"
+if [ -z "$BINTRAY_API_KEY" ]; then
+  echo "BINTRAY_API_KEY is not set"
   exit 1
 fi
 
@@ -47,7 +47,7 @@ bintrayUpload () {
     URL="https://api.bintray.com/content/leopardslab/$REPO/$PACKAGE/$VERSION/$UPLOADDIRPATH/$FILENAME;deb_distribution=$DISTRIBUTIONS;deb_component=$COMPONENTS;deb_architecture=$ARCH?publish=1&override=1"
     echo "Uploading $URL"
 
-    RESPONSE=$(curl -T ./$GORELEASER_DIR/$FILENAME -u$USER:$API_KEY "$URL" -I -s -w "HTTPSTATUS:%{http_code}");
+    RESPONSE=$(curl -T ./$GORELEASER_DIR/$FILENAME -u$BINTRAY_USER:$BINTRAY_API_KEY "$URL" -I -s -w "HTTPSTATUS:%{http_code}");
     HTTP_STATUS=$(echo $RESPONSE | tr -d '\n' | sed -e 's/.*HTTPSTATUS://')
     echo "$RESPONSE"
 
@@ -72,7 +72,7 @@ bintraySetDownloads () {
     URL="https://api.bintray.com/file_metadata/leopardslab/$REPO/$UPLOADDIRPATH/$FILENAME"
 
     echo "Putting $FILENAME in $PACKAGE's download list"
-    RESPONSE=$(curl -X PUT -d "{ \"list_in_downloads\": true }" -H "Content-Type: application/json" -u$USER:$API_KEY "$URL" -s -w "HTTPSTATUS:%{http_code}");
+    RESPONSE=$(curl -X PUT -d "{ \"list_in_downloads\": true }" -H "Content-Type: application/json" -u$BINTRAY_USER:$BINTRAY_API_KEY "$URL" -s -w "HTTPSTATUS:%{http_code}");
     HTTP_STATUS=$(echo $RESPONSE | tr -d '\n' | sed -e 's/.*HTTPSTATUS://')
     echo "$RESPONSE"
 
