@@ -1,5 +1,6 @@
 # Goreleaser documentation at http://goreleaser.com
 project_name: dunner
+
 builds:
 - env:
     - CGO_ENABLED=0
@@ -14,7 +15,8 @@ builds:
     - arm64
 
 archives:
-- replacements:
+-
+  replacements:
     386: i386
     amd64: x86_64
 checksum:
@@ -45,12 +47,16 @@ brews:
   test: |
     system "#{bin}/dunner version"
 
-nfpm:
-  name_template: '{{ .ProjectName }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
+nfpms:
+-
+  name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
   homepage:  https://github.com/leopardslab/Dunner
   description: A Docker based task runner tool
   maintainer: LeopardsLab Community
   license: MIT
+  replacements:
+    386: i386
+    amd64: x86_64
   formats:
   - deb
   - rpm
