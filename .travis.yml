@@ -62,7 +62,7 @@ deploy:
 
 - provider: script
   skip_cleanup: true
-  script: bash release/publish_rpm_to_bintray.sh
+  script: bash release/publish_deb_to_bintray.sh
   verbose: true
   on:
     tags: true
@@ -72,7 +72,7 @@ deploy:
 
 - provider: script
   skip_cleanup: true
-  script: bash release/publish_deb_to_bintray.sh
+  script: bash release/publish_rpm_to_bintray.sh
   verbose: true
   on:
     tags: true
