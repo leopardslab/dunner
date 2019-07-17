@@ -67,4 +67,4 @@ snapcrafts:
   publish: true
   apps:
     dunner:
-      plugs: ["home"]
+      plugs: ["home", "docker"]
