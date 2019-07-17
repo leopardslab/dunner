@@ -58,7 +58,7 @@ deploy:
   on:
     condition: "$TRAVIS_OS_NAME = linux"
     branch:
-      - /^release\/.*$/
+      - /^release\/.*/
     go: 1.11.x
 
 - provider: script
