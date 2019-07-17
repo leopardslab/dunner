@@ -4,7 +4,9 @@
 [![Codecov branch](https://img.shields.io/codecov/c/github/leopardslab/dunner/master.svg?style=for-the-badge)](https://codecov.io/gh/leopardslab/dunner)
 [![Build Status](https://travis-ci.org/leopardslab/Dunner.svg?branch=master)](https://travis-ci.org/leopardslab/Dunner)
 
-Dunner is a task runner tool like Grunt but uses Docker images like CircleCI do. You can define tasks and steps of the tasks in your `.dunner.yaml` file and then run these steps with `dunner do taskname`
+> The Docker Task Runner
+
+Dunner is a task runner tool like Grunt but uses Docker images like CircleCI do. You can define tasks and steps of the tasks in your `.dunner.yaml` file and then run these steps with `dunner do <taskname>`.
 
 
 Example `.dunner.yaml`
@@ -38,12 +40,14 @@ status:
 ```
 
 Now you can use as,
- 1. `dunner do deploy`
- 2. `dunner do status prod`
+* `dunner do deploy`
+* `dunner do status prod`
 
+# Guides
 
-## NOTE
-This work is still in progress. See the development plan.
+* [User Guide](https://github.com/leopardslab/dunner/wiki/User-Guide)
+* [Installation Guide](https://github.com/leopardslab/dunner/wiki/Installation-Guide)
+* [Developer Guide](https://github.com/leopardslab/dunner/wiki/Developer-Guide)
 
 ## Development Plan 
 
@@ -66,9 +70,3 @@ This work is still in progress. See the development plan.
 - [ ] Ability to install as a Deb package
 - [ ] Ability to install as a RPM package
 - [ ] Ability to install as a Brew package
-
-# Guides
-
-* [User Guide](https://github.com/leopardslab/dunner/wiki/User-Guide)
-* [Installation Guide](https://github.com/leopardslab/dunner/wiki/Installation-Guide)
-* [Developer Guide](https://github.com/leopardslab/dunner/wiki/Developer-Guide)
