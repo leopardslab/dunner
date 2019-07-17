@@ -37,6 +37,7 @@ script:
 after_success:
 - bash <(curl -s https://codecov.io/bash)
 - test -n "$TRAVIS_TAG" && snapcraft login --with snap.login
+- rm snap.login
 
 deploy:
 
