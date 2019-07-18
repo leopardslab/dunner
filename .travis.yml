@@ -43,21 +43,23 @@ deploy:
 
 - provider: script
   skip_cleanup: true
+  script: curl -sL https://git.io/goreleaser | bash -s -- --rm-dist --skip-publish
+  verbose: true
+  on:
+    condition: "$TRAVIS_OS_NAME = linux"
+    branches:
+      only:
+      - /^release\/.*$/
+    go: 1.11.x
+
+- provider: script
+  skip_cleanup: true
   script: curl -sL https://git.io/goreleaser | bash -s -- --rm-dist
   verbose: true
   on:
     tags: true
     condition: "$TRAVIS_OS_NAME = linux"
     branch: master
-    go: 1.11.x
-
-- provider: script
-  skip_cleanup: true
-  script: curl -sL https://git.io/goreleaser | bash -s -- --rm-dist --skip-publish
-  verbose: true
-  on:
-    all_branches: true
-    condition: os = linux AND branch =~ /^release\/.*$/
     go: 1.11.x
 
 - provider: script
