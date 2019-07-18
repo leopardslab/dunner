@@ -40,42 +40,41 @@ after_success:
 - rm snap.login
 
 deploy:
+  - provider: script
+    skip_cleanup: true
+    script: curl -sL https://git.io/goreleaser | bash -s -- --rm-dist --skip-publish
+    verbose: true
+    on:
+      condition: ($TRAVIS_OS_NAME = linux) AND (branch ~= /^release\/.*$/)
+      all_branches: true
+      go: 1.11.x
 
-- provider: script
-  skip_cleanup: true
-  script: curl -sL https://git.io/goreleaser | bash -s -- --rm-dist --skip-publish
-  verbose: true
-  on:
-    condition: ($TRAVIS_OS_NAME = linux) AND (branch ~= /^release\/.*$/)
-    all_branches: true
-    go: 1.11.x
+  - provider: script
+    skip_cleanup: true
+    script: curl -sL https://git.io/goreleaser | bash -s -- --rm-dist
+    verbose: true
+    on:
+      tags: true
+      condition: "$TRAVIS_OS_NAME = linux"
+      branch: master
+      go: 1.11.x
 
-- provider: script
-  skip_cleanup: true
-  script: curl -sL https://git.io/goreleaser | bash -s -- --rm-dist
-  verbose: true
-  on:
-    tags: true
-    condition: "$TRAVIS_OS_NAME = linux"
-    branch: master
-    go: 1.11.x
+  - provider: script
+    skip_cleanup: true
+    script: bash release/publish_deb_to_bintray.sh
+    verbose: true
+    on:
+      tags: true
+      condition: "$TRAVIS_OS_NAME = linux"
+      branch: master
+      go: 1.11.x
 
-- provider: script
-  skip_cleanup: true
-  script: bash release/publish_deb_to_bintray.sh
-  verbose: true
-  on:
-    tags: true
-    condition: "$TRAVIS_OS_NAME = linux"
-    branch: master
-    go: 1.11.x
-
-- provider: script
-  skip_cleanup: true
-  script: bash release/publish_rpm_to_bintray.sh
-  verbose: true
-  on:
-    tags: true
-    condition: "$TRAVIS_OS_NAME = linux"
-    branch: master
-    go: 1.11.x
+  - provider: script
+    skip_cleanup: true
+    script: bash release/publish_rpm_to_bintray.sh
+    verbose: true
+    on:
+      tags: true
+      condition: "$TRAVIS_OS_NAME = linux"
+      branch: master
+      go: 1.11.x
