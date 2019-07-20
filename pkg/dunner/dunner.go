@@ -51,6 +51,10 @@ func Do(_ *cobra.Command, args []string) {
 func ExecTask(configs *config.Configs, taskName string, args []string) {
 	var async = viper.GetBool("Async")
 	var wg sync.WaitGroup
+
+	if _, exists := configs.Tasks[taskName]; !exists {
+		log.Errorf("dunner: task '%s' does not exist", taskName)
+	}
 	for _, stepDefinition := range configs.Tasks[taskName] {
 		if async {
 			wg.Add(1)
