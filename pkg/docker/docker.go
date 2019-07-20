@@ -83,42 +83,43 @@ func (step Step) Exec() error {
 		log.Fatal(err)
 	}
 
-	loadingMsg := fmt.Sprintf("Pulling image: '%s'", step.Image)
+	if viper.GetBool("Force-pull") || !checkImageExist(ctx, cli, step.Image) {
+		loadingMsg := fmt.Sprintf("Pulling image: '%s'", step.Image)
+		var done chan bool
+		if !async {
+			done = make(chan bool)
+			go util.ShowLoadingMessage(
+				loadingMsg,
+				fmt.Sprintf("Pulled image: '%s'", step.Image),
+				&done,
+				nil,
+			)
+		} else {
+			log.Info(loadingMsg)
+		}
 
-	var done chan bool
-	if !async {
-		done = make(chan bool)
-		go util.ShowLoadingMessage(
-			loadingMsg,
-			fmt.Sprintf("Pulled image: '%s'", step.Image),
-			&done,
-			nil,
-		)
-	} else {
-		log.Info(loadingMsg)
-	}
+		out, err := cli.ImagePull(ctx, step.Image, types.ImagePullOptions{})
+		if err != nil {
+			return fmt.Errorf(`docker: failed to pull image %s: %s`, step.Image, err.Error())
+		}
 
-	out, err := cli.ImagePull(ctx, step.Image, types.ImagePullOptions{})
-	if err != nil {
-		return fmt.Errorf("Failed to pull image %s: %s", step.Image, err.Error())
-	}
+		termFd, isTerm := term.GetFdInfo(os.Stdout)
+		if verbose {
+			if err = jsonmessage.DisplayJSONMessagesStream(out, os.Stdout, termFd, isTerm, nil); err != nil {
+				log.Fatal(err)
+			}
+		} else {
+			if err = jsonmessage.DisplayJSONMessagesStream(out, ioutil.Discard, termFd, isTerm, nil); err != nil {
+				log.Fatal(err)
+			}
+		}
 
-	termFd, isTerm := term.GetFdInfo(os.Stdout)
-	if verbose {
-		if err = jsonmessage.DisplayJSONMessagesStream(out, os.Stdout, termFd, isTerm, nil); err != nil {
+		if !async {
+			done <- true
+		}
+		if err = out.Close(); err != nil {
 			log.Fatal(err)
 		}
-	} else {
-		if err = jsonmessage.DisplayJSONMessagesStream(out, ioutil.Discard, termFd, isTerm, nil); err != nil {
-			log.Fatal(err)
-		}
-	}
-
-	if !async {
-		done <- true
-	}
-	if err = out.Close(); err != nil {
-		log.Fatal(err)
 	}
 
 	var containerWorkingDir = containerDefaultWorkingDir
@@ -273,4 +274,27 @@ func ExtractResult(reader io.Reader, command []string) *Result {
 		Error:  errOut.String(),
 	}
 	return &result
+}
+
+func checkImageExist(ctx context.Context, cli *client.Client, image string) bool {
+	log.Debugf("docker: checking existence of the image '%s", image)
+	var splitImage = strings.Split(image, ":")
+	if len(splitImage) == 2 {
+		//tag := splitImage[1]
+		hostImages, err := cli.ImageList(ctx, types.ImageListOptions{})
+		if err != nil {
+			log.Error(err)
+		}
+		for _, imageSummary := range hostImages {
+			for _, repoTag := range imageSummary.RepoTags {
+				if repoTag == image {
+					log.Infof("Image '%s' exists with the host", image)
+					return true
+				}
+			}
+		}
+	} else if len(splitImage) > 2 {
+		log.Errorf(`docker: incorrect format for image name`)
+	}
+	return false
 }
