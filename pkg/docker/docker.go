@@ -83,7 +83,7 @@ func (step Step) Exec() error {
 		log.Fatal(err)
 	}
 
-	if viper.GetBool("Force-pull") || !checkImageExist(ctx, cli, step.Image) {
+	if viper.GetBool("Force-pull") || !checkImageExist(ctx, cli, step.Image, false) {
 		loadingMsg := fmt.Sprintf("Pulling image: '%s'", step.Image)
 		var done chan bool
 		if !async {
@@ -100,16 +100,26 @@ func (step Step) Exec() error {
 
 		out, err := cli.ImagePull(ctx, step.Image, types.ImagePullOptions{})
 		if err != nil {
-			return fmt.Errorf(`docker: failed to pull image %s: %s`, step.Image, err.Error())
+			log.Debug(err)
+			log.Infoln("Failed to fetch docker image from Docker Hub, checking in the host...")
+			if !checkImageExist(ctx, cli, step.Image, true) {
+				return fmt.Errorf(`docker: failed to pull image %s: %s`, step.Image, err.Error())
+			}
 		}
 
-		termFd, isTerm := term.GetFdInfo(os.Stdout)
-		if verbose {
-			if err = jsonmessage.DisplayJSONMessagesStream(out, os.Stdout, termFd, isTerm, nil); err != nil {
-				log.Fatal(err)
+		if out != nil {
+			termFd, isTerm := term.GetFdInfo(os.Stdout)
+			if verbose {
+				if err = jsonmessage.DisplayJSONMessagesStream(out, os.Stdout, termFd, isTerm, nil); err != nil {
+					log.Fatal(err)
+				}
+			} else {
+				if err = jsonmessage.DisplayJSONMessagesStream(out, ioutil.Discard, termFd, isTerm, nil); err != nil {
+					log.Fatal(err)
+				}
 			}
-		} else {
-			if err = jsonmessage.DisplayJSONMessagesStream(out, ioutil.Discard, termFd, isTerm, nil); err != nil {
+
+			if err = out.Close(); err != nil {
 				log.Fatal(err)
 			}
 		}
@@ -276,18 +286,23 @@ func ExtractResult(reader io.Reader, command []string) *Result {
 	return &result
 }
 
-func checkImageExist(ctx context.Context, cli *client.Client, image string) bool {
-	log.Debugf("docker: checking existence of the image '%s", image)
+func checkImageExist(ctx context.Context, cli *client.Client, image string, notag bool) bool {
+	log.Debugf("docker: checking existence of the image '%s'", image)
 	var splitImage = strings.Split(image, ":")
-	if len(splitImage) == 2 {
-		//tag := splitImage[1]
+	if len(splitImage) <= 2 {
 		hostImages, err := cli.ImageList(ctx, types.ImageListOptions{})
 		if err != nil {
 			log.Error(err)
 		}
 		for _, imageSummary := range hostImages {
-			for _, repoTag := range imageSummary.RepoTags {
-				if repoTag == image {
+			for _, rt := range imageSummary.RepoTags {
+				if len(splitImage) < 2 && notag {
+					if strings.Split(rt, ":")[0] == image {
+						log.Infof("Image '%s' exists with the host", image)
+						return true
+					}
+				}
+				if rt == image {
 					log.Infof("Image '%s' exists with the host", image)
 					return true
 				}
