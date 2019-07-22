@@ -102,7 +102,11 @@ func (step Step) Exec() (*[]Result, error) {
 
 	var containerWorkingDir = containerDefaultWorkingDir
 	if step.WorkDir != "" {
-		containerWorkingDir = filepath.Join(hostMountTarget, step.WorkDir)
+		if step.WorkDir[0] == '/' {
+			containerWorkingDir = step.WorkDir
+		} else {
+			containerWorkingDir = filepath.Join(hostMountTarget, step.WorkDir)
+		}
 	}
 
 	multipleCommands = len(step.Commands) > 0
