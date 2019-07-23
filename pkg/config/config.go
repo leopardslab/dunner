@@ -271,7 +271,7 @@ func loadDotEnv() {
 	var err error
 	dotEnv, err = godotenv.Read(file)
 	if err != nil {
-		log.Warn(err)
+		log.Infof("No environment loaded from %s file: %s", file, err.Error())
 	}
 }
 
