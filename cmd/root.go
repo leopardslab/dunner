@@ -55,6 +55,15 @@ func init() {
 		log.Fatal(err)
 	}
 
+	// Working directory
+	rootCmd.PersistentFlags().StringP("dir", "C", "./", "Working directory")
+	if err := rootCmd.MarkPersistentFlagDirname("env-file"); err != nil {
+		log.Fatal(err)
+	}
+	if err := viper.BindPFlag("WorkingDirectory", rootCmd.PersistentFlags().Lookup("dir")); err != nil {
+		log.Fatal(err)
+	}
+
 }
 
 // Execute method executes the 'Run' method of rootCmd.

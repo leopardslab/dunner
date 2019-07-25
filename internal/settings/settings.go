@@ -26,6 +26,9 @@ func Init() {
 	viper.SetDefault("GlobalLogFile", "/var/log/dunner/logs/")
 	viper.SetDefault("LocalLogFile", nil)
 
+	// Working Directory
+	viper.SetDefault("WorkingDirectory", "./")
+
 	// Modes
 	viper.SetDefault("Async", false)
 	viper.SetDefault("Verbose", false)
