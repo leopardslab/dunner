@@ -42,6 +42,7 @@ type Step struct {
 	ExtMounts []mount.Mount     // The directories to be mounted on the container as bind volumes
 	Follow    string            // The next task that must be executed if this does go successfully
 	Args      []string          // The list of arguments that are to be passed
+	User      string            // User that will run the command(s) inside the container, also support user:group
 }
 
 // Result stores the output of commands run using `docker exec`
@@ -116,6 +117,7 @@ func (step Step) Exec() (*[]Result, error) {
 			Cmd:        defaultCommand,
 			Env:        step.Env,
 			WorkingDir: containerWorkingDir,
+			User:       step.User,
 		},
 		&container.HostConfig{
 			Mounts: append(step.ExtMounts, mount.Mount{

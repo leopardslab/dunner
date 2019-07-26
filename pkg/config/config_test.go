@@ -17,6 +17,7 @@ func TestGetConfigs(t *testing.T) {
 	var content = []byte(`
 test:
   - image: node
+    user: 20
     commands:
       - ["node", "--version"]
       - ["npm", "--version"]
@@ -47,6 +48,7 @@ test:
 		Name:     "",
 		Image:    "node",
 		Commands: [][]string{{"node", "--version"}, {"npm", "--version"}},
+		User:     "20",
 		Envs:     []string{"MYVAR=MYVAL"},
 	}
 	var tasks = make(map[string][]Task)

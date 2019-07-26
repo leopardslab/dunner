@@ -6,6 +6,7 @@ package dunner
 import (
 	"fmt"
 	"os"
+	os_user "os/user"
 	"regexp"
 	"strconv"
 	"strings"
@@ -65,6 +66,7 @@ func ExecTask(configs *config.Configs, taskName string, args []string) {
 			WorkDir:  stepDefinition.SubDir,
 			Follow:   stepDefinition.Follow,
 			Args:     stepDefinition.Args,
+			User:     getDunnerUser(stepDefinition),
 		}
 
 		if err := config.DecodeMount(stepDefinition.Mounts, &step); err != nil {
@@ -150,4 +152,23 @@ func PassArgs(s *docker.Step, args *[]string) error {
 		}
 	}
 	return nil
+}
+
+// getDunnerUser returns the user value from step, if empty returns first found value in order:
+// UID env variable, current user ID, current user name.
+func getDunnerUser(task config.Task) string {
+	if task.User != "" {
+		return task.User
+	}
+	dunnerUser := os.Getenv("UID")
+	if dunnerUser == "" {
+		user, err := os_user.Current()
+		if err != nil {
+			dunnerUser = os.Getenv("USER")
+			log.Debugf("Unable to find current user id: %s. Using `%s` as docker user.", err.Error(), dunnerUser)
+		} else {
+			dunnerUser = user.Uid
+		}
+	}
+	return dunnerUser
 }

@@ -116,6 +116,9 @@ type Task struct {
 
 	// The list of arguments that are to be passed
 	Args []string `yaml:"args"`
+
+	// User that will run the command(s) inside the container, also support user:group
+	User string `yaml:"user"`
 }
 
 // Configs describes the parsed information from the dunner file. It is a map of task name as keys and the list of tasks
