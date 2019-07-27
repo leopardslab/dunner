@@ -26,7 +26,7 @@ install:
 build: install
 	@$(GOINSTALL) -ldflags "-X main.version=$(VERSION)-$(SHA) -s"
 
-ci: build fmt lint vet
+ci: build lint vet
 	@go test -v $(ALL_PACKAGES) -race -coverprofile=coverage.txt -covermode=atomic
 
 test: build
