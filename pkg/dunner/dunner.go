@@ -44,16 +44,18 @@ func Do(_ *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	ExecTask(configs, args[0], args[1:])
+	if err = ExecTask(configs, args[0], args[1:]); err != nil {
+		log.Fatal(err)
+	}
 }
 
 // ExecTask processes the parsed tasks from the dunner task file
-func ExecTask(configs *config.Configs, taskName string, args []string) {
+func ExecTask(configs *config.Configs, taskName string, args []string) error {
 	var async = viper.GetBool("Async")
 	var wg sync.WaitGroup
 
 	if _, exists := configs.Tasks[taskName]; !exists {
-		log.Errorf("dunner: task '%s' does not exist", taskName)
+		return fmt.Errorf("dunner: task '%s' does not exist", taskName)
 	}
 	for _, stepDefinition := range configs.Tasks[taskName] {
 		if async {
@@ -83,6 +85,7 @@ func ExecTask(configs *config.Configs, taskName string, args []string) {
 	}
 
 	wg.Wait()
+	return nil
 }
 
 // Process executes a single step of the task.
