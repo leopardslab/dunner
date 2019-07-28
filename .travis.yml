@@ -45,7 +45,8 @@ deploy:
     script: curl -sL https://git.io/goreleaser | bash -s -- --rm-dist --skip-publish
     verbose: true
     on:
-      condition: "$TRAVIS_OS_NAME = linux" AND branch = release/2.1.6
+      all_branches: true
+      condition: $TRAVIS_BRANCH =~ ^release\/.*$ && $TRAVIS_OS_NAME = linux
       go: 1.11.x
 
   - provider: script
