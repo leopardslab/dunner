@@ -86,6 +86,10 @@ var customValidations = []customValidation{
 		translation:  "mount directory '{0}' is invalid. Check if source directory path exists.",
 		validationFn: ParseMountDir,
 	},
+	{
+		tag:         "required_without",
+		translation: "image is required, unless the task has a `follow` field",
+	},
 }
 
 // Task describes a single task to be run in a docker container
@@ -94,7 +98,7 @@ type Task struct {
 	Name string `yaml:"name"`
 
 	// Image is the repo name on which Docker containers are built
-	Image string `yaml:"image" validate:"required"`
+	Image string `yaml:"image" validate:"required_without=Follow"`
 
 	// SubDir is the primary directory on which task is to be run
 	SubDir string `yaml:"dir"`
@@ -182,11 +186,13 @@ func initValidator(customValidations []customValidation) error {
 
 	// Register Custom validators and translations
 	for _, t := range customValidations {
-		err := govalidator.RegisterValidationCtx(t.tag, t.validationFn)
-		if err != nil {
-			return fmt.Errorf("failed to register validation: %s", err.Error())
+		if t.validationFn != nil {
+			err := govalidator.RegisterValidationCtx(t.tag, t.validationFn)
+			if err != nil {
+				return fmt.Errorf("failed to register validation: %s", err.Error())
+			}
 		}
-		err = govalidator.RegisterTranslation(t.tag, trans, registrationFunc(t.tag, t.translation), translateFunc)
+		err := govalidator.RegisterTranslation(t.tag, trans, registrationFunc(t.tag, t.translation), translateFunc)
 		if err != nil {
 			return fmt.Errorf("failed to register translations: %s", err.Error())
 		}
