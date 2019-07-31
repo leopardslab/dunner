@@ -79,12 +79,8 @@ func TestConfigs_ValidateWithNoTasks(t *testing.T) {
 
 	errs := configs.Validate()
 
-	if len(errs) != 1 {
-		t.Fatalf("Configs validation failed, expected 1 error, got %s", errs)
-	}
-	expected := "Tasks must contain at least 1 item"
-	if errs[0].Error() != expected {
-		t.Fatalf("expected: %s, got: %s", expected, errs[0].Error())
+	if len(errs) != 0 {
+		t.Fatalf("Configs validation failed, expected no error, got %s", errs)
 	}
 }
 
