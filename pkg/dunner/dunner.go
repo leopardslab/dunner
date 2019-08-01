@@ -109,28 +109,9 @@ func Process(configs *config.Configs, s *docker.Step, wg *sync.WaitGroup, args [
 		log.Fatalf(`dunner: image repository name cannot be empty`)
 	}
 
-	results, err := (*s).Exec()
+	err := (*s).Exec()
 	if err != nil {
 		log.Fatal(err)
-	}
-
-	if results == nil {
-		return
-	}
-
-	for _, res := range *results {
-		log.Infof(
-			"Running task '%+v' on '%+v' Docker with command '%+v'",
-			s.Task,
-			s.Image,
-			res.Command,
-		)
-		if res.Output != "" {
-			fmt.Printf(`OUT: %s`, res.Output)
-		}
-		if res.Error != "" {
-			fmt.Printf(`ERR: %s`, res.Error)
-		}
 	}
 }
 
