@@ -4,7 +4,7 @@ import (
 	"github.com/leopardslab/dunner/internal/settings"
 )
 
-func ExampleStep_Do() {
+func ExampleStep_Exec() {
 	settings.Init()
 	var testNodeVersion = "10.15.0"
 	step := &Step{
