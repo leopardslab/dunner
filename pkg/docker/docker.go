@@ -142,15 +142,12 @@ func (step Step) Exec() error {
 		}
 	}()
 
-	if dryRun := viper.GetBool("Dry-run"); dryRun {
-		return nil
-	}
-
 	commands := step.Commands
 	if len(commands) == 0 {
 		commands = append(commands, step.Command)
 	}
 
+	dryRun := viper.GetBool("Dry-run")
 	for _, cmd := range commands {
 		log.Infof(
 			"Running task '%+v' on '%+v' Docker with command '%+v'",
@@ -158,6 +155,10 @@ func (step Step) Exec() error {
 			step.Image,
 			strings.Join(cmd, " "),
 		)
+
+		if dryRun {
+			continue
+		}
 
 		r, err := runCmd(ctx, cli, resp.ID, cmd)
 		if err != nil {
