@@ -68,6 +68,6 @@ Now you can use as,
 - [x] Ability to Dry Run 
 - [x] Ability to verfiy the `.dunner.yaml` file
 - [x] Ability to define multiple commands for the same step
-- [ ] Ability to install as a Deb package
-- [ ] Ability to install as a RPM package
-- [ ] Ability to install as a Brew package
+- [x] Ability to install as a Deb package
+- [x] Ability to install as a RPM package
+- [x] Ability to install as a Brew package
