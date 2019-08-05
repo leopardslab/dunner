@@ -47,9 +47,8 @@ type Step struct {
 
 // Result stores the output of commands run using `docker exec`
 type Result struct {
-	Command string
-	Output  string
-	Error   string
+	Output string
+	Error  string
 }
 
 // Exec method is used to execute the task described in the corresponding step. It returns an object of the
@@ -57,14 +56,12 @@ type Result struct {
 //
 // Note: A working internet connection is mandatory for the Docker container to contact Docker Hub to find the image and/or
 // corresponding updates.
-func (step Step) Exec() (*[]Result, error) {
-
+func (step Step) Exec() error {
 	var (
 		hostMountFilepath          = viper.GetString("WorkingDirectory")
 		containerDefaultWorkingDir = "/dunner"
 		hostMountTarget            = "/dunner"
 		defaultCommand             = []string{"tail", "-f", "/dev/null"}
-		multipleCommands           = false
 	)
 
 	ctx := context.Background()
@@ -79,7 +76,7 @@ func (step Step) Exec() (*[]Result, error) {
 		log.Fatal(err)
 	}
 
-	log.Infof("Pulling an image: '%s'", step.Image)
+	log.Infof("Pulling image: '%s'", step.Image)
 	out, err := cli.ImagePull(ctx, step.Image, types.ImagePullOptions{})
 	if err != nil {
 		log.Fatal(err)
@@ -110,10 +107,6 @@ func (step Step) Exec() (*[]Result, error) {
 		}
 	}
 
-	multipleCommands = len(step.Commands) > 0
-	if !multipleCommands {
-		defaultCommand = step.Command
-	}
 	resp, err := cli.ContainerCreate(
 		ctx,
 		&container.Config{
@@ -155,39 +148,36 @@ func (step Step) Exec() (*[]Result, error) {
 		}
 	}()
 
-	var results []Result
-	if dryRun := viper.GetBool("Dry-run"); !dryRun {
-		if multipleCommands {
-			for _, cmd := range step.Commands {
-				r, err := runCmd(ctx, cli, resp.ID, cmd)
-				if err != nil {
-					log.Fatal(err)
-				}
-				results = append(results, *r)
-			}
-		} else {
-			statusCh, errCh := cli.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
-			select {
-			case err = <-errCh:
-				if err != nil {
-					log.Fatal(err)
-				}
-			case <-statusCh:
-			}
-
-			out, err := cli.ContainerLogs(ctx, resp.ID, types.ContainerLogsOptions{
-				ShowStdout: true,
-				ShowStderr: true,
-			})
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			results = []Result{*ExtractResult(out, step.Command)}
-		}
-		return &results, nil
+	commands := step.Commands
+	if len(commands) == 0 {
+		commands = append(commands, step.Command)
 	}
-	return nil, nil
+
+	dryRun := viper.GetBool("Dry-run")
+	for _, cmd := range commands {
+		log.Infof(
+			"Running task '%+v' on '%+v' Docker with command '%+v'",
+			step.Task,
+			step.Image,
+			strings.Join(cmd, " "),
+		)
+
+		if dryRun {
+			continue
+		}
+
+		r, err := runCmd(ctx, cli, resp.ID, cmd)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if r != nil && r.Output != "" {
+			fmt.Printf(`OUT: %s`, r.Output)
+		}
+		if r != nil && r.Error != "" {
+			fmt.Printf(`ERR: %s`, r.Error)
+		}
+	}
+	return nil
 }
 
 func runCmd(ctx context.Context, cli *client.Client, containerID string, command []string) (*Result, error) {
@@ -222,9 +212,8 @@ func ExtractResult(reader io.Reader, command []string) *Result {
 		log.Fatal(err)
 	}
 	var result = Result{
-		Command: strings.Join(command, " "),
-		Output:  out.String(),
-		Error:   errOut.String(),
+		Output: out.String(),
+		Error:  errOut.String(),
 	}
 	return &result
 }

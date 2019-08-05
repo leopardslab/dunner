@@ -1,65 +1,50 @@
 package docker
 
 import (
-	"path/filepath"
-	"strings"
-	"testing"
-
 	"github.com/leopardslab/dunner/internal/settings"
 )
 
-func TestStep_Exec(t *testing.T) {
+func ExampleStep_Exec() {
+	settings.Init()
 	var testNodeVersion = "10.15.0"
-	results, err := runCommand([]string{"node", "--version"}, "./", testNodeVersion)
-	if err != nil {
-		t.Error(err)
+	step := &Step{
+		Task:     "test",
+		Name:     "node",
+		Image:    "node:" + testNodeVersion,
+		Commands: [][]string{{"node", "--version"}},
+		Env:      nil,
+		Volumes:  nil,
 	}
 
-	strOut := (*results)[0].Output
-	var res = strings.Trim(strings.Split(strOut, "v")[1], "\n")
-	if res != testNodeVersion {
-		t.Fatalf("Detected version of node container: '%s'; Expected output: '%s'", res, testNodeVersion)
+	err := step.Exec()
+	if err != nil {
+		panic(err)
 	}
+	// Output: OUT: v10.15.0
 }
 
-func TestStep_Exec_WorkingDirAbs(t *testing.T) {
+func ExampleStep_Exec_WorkingDirAbs() {
 	var testNodeVersion = "10.15.0"
 	var absPath = "/go"
-	results, err := runCommand([]string{"pwd"}, absPath, testNodeVersion)
-	if err != nil {
-		t.Error(err)
-	}
+	err := runCommand([]string{"pwd"}, absPath, testNodeVersion)
 
-	res := strings.Trim((*results)[0].Output, "\n")
-	//var res = strings.Trim(strings.Split(strOut, "v")[1], "\n")
-	if res != absPath {
-		t.Fatalf("Detected working directory of node container: '%s'; Expected output: '%s'",
-			res,
-			absPath,
-		)
+	if err != nil {
+		panic(err)
 	}
+	// Output: OUT: /go
 }
 
-func TestStep_Exec_WorkingDirRel(t *testing.T) {
+func ExampleStep_Exec_WorkingDirRel() {
 	var testNodeVersion = "10.15.0"
 	var relPath = "./"
-	results, err := runCommand([]string{"pwd"}, relPath, testNodeVersion)
+	err := runCommand([]string{"pwd"}, relPath, testNodeVersion)
 	if err != nil {
-		t.Error(err)
+		panic(err)
 	}
-
-	res := strings.Trim((*results)[0].Output, "\n")
-	//var res = strings.Trim(strings.Split(strOut, "v")[1], "\n")
-	if res != filepath.Join("/dunner", relPath) {
-		t.Fatalf(
-			"Detected working directory of node container: '%s'; Expected output: '%s'",
-			res,
-			filepath.Join("/dunner", relPath),
-		)
-	}
+	// Output: OUT: /dunner
 }
 
-func runCommand(command []string, dir string, nodeVer string) (*[]Result, error) {
+func runCommand(command []string, dir string, nodeVer string) error {
 	settings.Init()
 	step := &Step{
 		Task:    "test",
