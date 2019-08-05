@@ -23,7 +23,8 @@ func ExampleStep_Exec() {
 	// Output: OUT: v10.15.0
 }
 
-func ExampleStep_Exec_WorkingDirAbs() {
+// WorkingDirAbs
+func ExampleStep() {
 	var testNodeVersion = "10.15.0"
 	var absPath = "/go"
 	err := runCommand([]string{"pwd"}, absPath, testNodeVersion)
@@ -34,7 +35,8 @@ func ExampleStep_Exec_WorkingDirAbs() {
 	// Output: OUT: /go
 }
 
-func ExampleStep_Exec_WorkingDirRel() {
+// WorkingDirRel
+func Example() {
 	var testNodeVersion = "10.15.0"
 	var relPath = "./"
 	err := runCommand([]string{"pwd"}, relPath, testNodeVersion)
