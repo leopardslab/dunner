@@ -23,6 +23,7 @@ func ExampleStep_Exec() {
 	// Output: OUT: v10.15.0
 }
 
+// WorkingDirAbs
 func ExampleStep() {
 	var testNodeVersion = "10.15.0"
 	var absPath = "/go"
@@ -34,6 +35,7 @@ func ExampleStep() {
 	// Output: OUT: /go
 }
 
+// WorkingDirRel
 func Example() {
 	var testNodeVersion = "10.15.0"
 	var relPath = "./"
