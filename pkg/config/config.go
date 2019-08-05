@@ -125,7 +125,7 @@ type Task struct {
 // Configs describes the parsed information from the dunner file. It is a map of task name as keys and the list of tasks
 // associated with it.
 type Configs struct {
-	Tasks map[string][]Task `validate:"required,min=1,dive,keys,required,endkeys,required,min=1,required"`
+	Tasks map[string][]Task `validate:"dive,keys,required,endkeys,required,min=1,required"`
 }
 
 // Validate validates config and returns errors.
@@ -256,17 +256,17 @@ func ParseMountDir(ctx context.Context, fl validator.FieldLevel) bool {
 func GetConfigs(filename string) (*Configs, error) {
 	fileContents, err := ioutil.ReadFile(filename)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	var configs Configs
 	if err := yaml.Unmarshal(fileContents, &configs.Tasks); err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	loadDotEnv()
 	if err := ParseEnv(&configs); err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	return &configs, nil
