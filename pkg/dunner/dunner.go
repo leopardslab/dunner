@@ -165,7 +165,7 @@ func getDunnerUser(task config.Task) string {
 		user, err := os_user.Current()
 		if err != nil {
 			dunnerUser = os.Getenv("USER")
-			log.Debugf("Unable to find current user id: %s. Using `%s` as docker user.", err.Error(), dunnerUser)
+			log.Debugf("Unable to find current user id: %s. Using `%s` as Docker user.", err.Error(), dunnerUser)
 		} else {
 			dunnerUser = user.Uid
 		}
