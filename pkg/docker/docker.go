@@ -57,7 +57,7 @@ type Result struct {
 // corresponding updates.
 func (step Step) Exec() error {
 	var (
-		hostMountFilepath          = "./"
+		hostMountFilepath          = viper.GetString("WorkingDirectory")
 		containerDefaultWorkingDir = "/dunner"
 		hostMountTarget            = "/dunner"
 		defaultCommand             = []string{"tail", "-f", "/dev/null"}
@@ -75,7 +75,7 @@ func (step Step) Exec() error {
 		log.Fatal(err)
 	}
 
-	log.Infof("Pulling an image: '%s'", step.Image)
+	log.Infof("Pulling image: '%s'", step.Image)
 	out, err := cli.ImagePull(ctx, step.Image, types.ImagePullOptions{})
 	if err != nil {
 		log.Fatal(err)
@@ -99,7 +99,11 @@ func (step Step) Exec() error {
 
 	var containerWorkingDir = containerDefaultWorkingDir
 	if step.WorkDir != "" {
-		containerWorkingDir = filepath.Join(hostMountTarget, step.WorkDir)
+		if step.WorkDir[0] == '/' {
+			containerWorkingDir = step.WorkDir
+		} else {
+			containerWorkingDir = filepath.Join(hostMountTarget, step.WorkDir)
+		}
 	}
 
 	resp, err := cli.ContainerCreate(

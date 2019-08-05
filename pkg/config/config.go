@@ -44,7 +44,7 @@ import (
 	"github.com/leopardslab/dunner/internal/util"
 	"github.com/leopardslab/dunner/pkg/docker"
 	"github.com/spf13/viper"
-	"gopkg.in/go-playground/validator.v9"
+	validator "gopkg.in/go-playground/validator.v9"
 	en_translations "gopkg.in/go-playground/validator.v9/translations/en"
 	yaml "gopkg.in/yaml.v2"
 )
@@ -86,6 +86,10 @@ var customValidations = []customValidation{
 		translation:  "mount directory '{0}' is invalid. Check if source directory path exists.",
 		validationFn: ParseMountDir,
 	},
+	{
+		tag:         "required_without",
+		translation: "image is required, unless the task has a `follow` field",
+	},
 }
 
 // Task describes a single task to be run in a docker container
@@ -94,7 +98,7 @@ type Task struct {
 	Name string `yaml:"name"`
 
 	// Image is the repo name on which Docker containers are built
-	Image string `yaml:"image" validate:"required"`
+	Image string `yaml:"image" validate:"required_without=Follow"`
 
 	// SubDir is the primary directory on which task is to be run
 	SubDir string `yaml:"dir"`
@@ -121,7 +125,7 @@ type Task struct {
 // Configs describes the parsed information from the dunner file. It is a map of task name as keys and the list of tasks
 // associated with it.
 type Configs struct {
-	Tasks map[string][]Task `validate:"required,min=1,dive,keys,required,endkeys,required,min=1,required"`
+	Tasks map[string][]Task `validate:"dive,keys,required,endkeys,required,min=1,required"`
 }
 
 // Validate validates config and returns errors.
@@ -182,11 +186,13 @@ func initValidator(customValidations []customValidation) error {
 
 	// Register Custom validators and translations
 	for _, t := range customValidations {
-		err := govalidator.RegisterValidationCtx(t.tag, t.validationFn)
-		if err != nil {
-			return fmt.Errorf("failed to register validation: %s", err.Error())
+		if t.validationFn != nil {
+			err := govalidator.RegisterValidationCtx(t.tag, t.validationFn)
+			if err != nil {
+				return fmt.Errorf("failed to register validation: %s", err.Error())
+			}
 		}
-		err = govalidator.RegisterTranslation(t.tag, trans, registrationFunc(t.tag, t.translation), translateFunc)
+		err := govalidator.RegisterTranslation(t.tag, trans, registrationFunc(t.tag, t.translation), translateFunc)
 		if err != nil {
 			return fmt.Errorf("failed to register translations: %s", err.Error())
 		}
@@ -250,17 +256,17 @@ func ParseMountDir(ctx context.Context, fl validator.FieldLevel) bool {
 func GetConfigs(filename string) (*Configs, error) {
 	fileContents, err := ioutil.ReadFile(filename)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	var configs Configs
 	if err := yaml.Unmarshal(fileContents, &configs.Tasks); err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	loadDotEnv()
 	if err := ParseEnv(&configs); err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	return &configs, nil

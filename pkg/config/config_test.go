@@ -1,6 +1,7 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/leopardslab/dunner/internal/util"
 	"github.com/leopardslab/dunner/pkg/docker"
+	"gopkg.in/go-playground/validator.v9"
 )
 
 func TestGetConfigs(t *testing.T) {
@@ -79,12 +81,8 @@ func TestConfigs_ValidateWithNoTasks(t *testing.T) {
 
 	errs := configs.Validate()
 
-	if len(errs) != 1 {
-		t.Fatalf("Configs validation failed, expected 1 error, got %s", errs)
-	}
-	expected := "Tasks must contain at least 1 item"
-	if errs[0].Error() != expected {
-		t.Fatalf("expected: %s, got: %s", expected, errs[0].Error())
+	if len(errs) != 0 {
+		t.Fatalf("Configs validation failed, expected no error, got %s", errs)
 	}
 }
 
@@ -100,13 +98,26 @@ func TestConfigs_ValidateWithEmptyImageAndCommand(t *testing.T) {
 		t.Fatalf("expected 2 errors, got %d : %s", len(errs), errs)
 	}
 
-	expected1 := "task 'stats': image is a required field"
+	expected1 := "task 'stats': image is required, unless the task has a `follow` field"
 	expected2 := "task 'stats': command[0] is a required field"
 	if errs[0].Error() != expected1 {
 		t.Fatalf("expected: %s, got: %s", expected1, errs[0].Error())
 	}
 	if errs[1].Error() != expected2 {
 		t.Fatalf("expected: %s, got: %s", expected2, errs[1].Error())
+	}
+}
+
+func TestConfigs_ValidateForAliasTask(t *testing.T) {
+	tasks := make(map[string][]Task, 0)
+	tasks["foo"] = []Task{Task{Image: "golang", Command: []string{"go", "version"}}}
+	tasks["stats"] = []Task{Task{Follow: "foo"}}
+	configs := &Configs{Tasks: tasks}
+
+	errs := configs.Validate()
+
+	if len(errs) != 0 {
+		t.Fatalf("expected no errors, got %d : %s", len(errs), errs)
 	}
 }
 
@@ -274,7 +285,18 @@ func TestInitValidatorForNilTranslation(t *testing.T) {
 
 	err := initValidator(vals)
 
-	expected := "failed to register validation: Function cannot be empty"
+	if err != nil {
+		t.Fatalf("expected nil, got %s", err)
+	}
+}
+
+func TestInitValidatorForEmptyTag(t *testing.T) {
+	vals := []customValidation{{tag: "", translation: "",
+		validationFn: func(context.Context, validator.FieldLevel) bool { return false }}}
+
+	err := initValidator(vals)
+
+	expected := "failed to register validation: Function Key cannot be empty"
 	if err == nil {
 		t.Fatalf("expected %s, got %s", expected, err)
 	}

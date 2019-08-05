@@ -23,7 +23,7 @@ func ListRecipes() error {
 	}
 	cookbook := cookbook{}
 	if err := yaml.Unmarshal(contents, &cookbook); err != nil {
-		return fmt.Errorf("Failed to read list of dunner recipes: %s", err.Error())	
+		return fmt.Errorf("Failed to read list of dunner recipes: %s", err.Error())
 	}
 	if len(cookbook.Recipes) == 0 {
 		fmt.Println("No dunner recipes found")

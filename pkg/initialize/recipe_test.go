@@ -52,4 +52,3 @@ func TestListTemplatesWhen404(t *testing.T) {
 		t.Errorf("Expected %s, got %s", expectedErr, err)
 	}
 }
-
