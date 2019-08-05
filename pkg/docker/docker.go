@@ -59,7 +59,7 @@ type Result struct {
 func (step Step) Exec() (*[]Result, error) {
 
 	var (
-		hostMountFilepath          = "./"
+		hostMountFilepath          = viper.GetString("WorkingDirectory")
 		containerDefaultWorkingDir = "/dunner"
 		hostMountTarget            = "/dunner"
 		defaultCommand             = []string{"tail", "-f", "/dev/null"}
