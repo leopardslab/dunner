@@ -10,7 +10,7 @@ import (
 
 	"github.com/leopardslab/dunner/internal/util"
 	"github.com/leopardslab/dunner/pkg/docker"
-	"gopkg.in/go-playground/validator.v9"
+	validator "gopkg.in/go-playground/validator.v9"
 )
 
 func TestGetConfigs(t *testing.T) {
