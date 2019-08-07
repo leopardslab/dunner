@@ -6,8 +6,10 @@ import (
 	"io/ioutil"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 
+	"github.com/leopardslab/dunner/internal"
 	"github.com/leopardslab/dunner/internal/util"
 	"github.com/leopardslab/dunner/pkg/docker"
 	"gopkg.in/go-playground/validator.v9"
@@ -377,5 +379,71 @@ func TestDecodeMountWithEnvironmentVariable(t *testing.T) {
 	}
 	if (*step).ExtMounts[0].Target != util.HomeDir {
 		t.Fatalf("expected ExtMounts Source to be %s, got %s", util.HomeDir, (*step).ExtMounts[0].Target)
+	}
+}
+
+func TestGetDunnerTaskFileWithCustomFileFromUser(t *testing.T) {
+	taskFile := ".test_dunner.yaml"
+
+	got, err := getDunnerTaskFile(taskFile)
+
+	if err != nil {
+		t.Fatalf("expected no error, got %s", err)
+	}
+	if got != taskFile {
+		t.Fatalf("expected original taskfile from user %s, got %s", taskFile, got)
+	}
+}
+
+func TestGetDunnerTaskFileWithDefaultValue(t *testing.T) {
+	taskFile := internal.DefaultDunnerTaskFileName
+
+	got, err := getDunnerTaskFile(taskFile)
+
+	if err != nil {
+		t.Fatalf("expected no error, got %s", err)
+	}
+	if !strings.HasSuffix(got, taskFile) {
+		t.Fatalf("expected taskfile to end with %s, got %s", taskFile, got)
+	}
+}
+
+func TestGetDunnerTaskFileWhenNotPresentTillRoot(t *testing.T) {
+	taskFile := internal.DefaultDunnerTaskFileName
+	revert := setup(t)
+	defer revert()
+
+	got, err := getDunnerTaskFile(taskFile)
+
+	if got != "" {
+		t.Errorf("expected taskfile to be empty, got %s", got)
+	}
+	if err == nil {
+		t.Fatalf("expected error, got nil")
+	}
+	expectedErr := "failed to find Dunner task file"
+	if err.Error() != expectedErr {
+		t.Fatalf("expected error: %s, got: %s", expectedErr, err.Error())
+	}
+}
+
+func setup(t *testing.T) func() {
+	folder, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Errorf("Failed to create temp dir: %s", err.Error())
+	}
+
+	previous, err := os.Getwd()
+	if err != nil {
+		t.Errorf("Failed to get working directory: %s", err.Error())
+	}
+
+	if err = os.Chdir(folder); err != nil {
+		t.Errorf("Failed to change working directory: %s", err.Error())
+	}
+	return func() {
+		if err = os.Chdir(previous); err != nil {
+			t.Errorf("Failed to revert change in working directory: %s", err.Error())
+		}
 	}
 }

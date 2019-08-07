@@ -52,6 +52,15 @@ func DirExists(dir string) bool {
 	return src.IsDir()
 }
 
+// FileExists checks if the given file exists
+// The argument can be full path of file or relative to working directory
+func FileExists(path string) bool {
+	if _, err := os.Stat(path); err == nil {
+		return true
+	}
+	return false
+}
+
 // Download makes the http call to given URL and saves to filename given in current directory
 func Download(url string, filename string) error {
 	resp, err := http.Get(url)

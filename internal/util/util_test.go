@@ -235,3 +235,12 @@ func createLogger(name string) logger {
 func (l logger) equals(l1 logger) bool {
 	return l.name == l1.name
 }
+
+func TestFileExists(t *testing.T) {
+	if FileExists("util.go") != true {
+		t.Errorf("expected file to exist, but does not exist")
+	}
+	if FileExists("invalid") != false {
+		t.Errorf("expected file to not exist, but exists")
+	}
+}

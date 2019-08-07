@@ -11,11 +11,11 @@ func init() {
 }
 
 var listTasksCmd = &cobra.Command{
-	Use:     "tasks",
-	Short:   "Lists all available tasks in dunner task file",
-	Long:    "This lists all the available tasks in dunner task file, `.dunner.yaml` file by default or file passed to `-t` flag",
-	Run:     ListTasks,
-	Args:    cobra.NoArgs,
+	Use:   "tasks",
+	Short: "Lists all available tasks in dunner task file",
+	Long:  "This lists all the available tasks in dunner task file, `.dunner.yaml` file by default or file passed to `-t` flag",
+	Run:   ListTasks,
+	Args:  cobra.NoArgs,
 }
 
 // ListTasks command invoked from command line lists all available dunner tasks
