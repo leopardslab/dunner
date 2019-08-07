@@ -408,15 +408,15 @@ func TestGetDunnerTaskFileWithDefaultValue(t *testing.T) {
 	}
 }
 
-func TestGetDunnerTaskFileWhenNotPresentTillRoot(t *testing.T) {
+func TestGetConfigsWhenNotPresentTillRoot(t *testing.T) {
 	taskFile := internal.DefaultDunnerTaskFileName
 	revert := setup(t)
 	defer revert()
 
-	got, err := getDunnerTaskFile(taskFile)
+	got, err := GetConfigs(taskFile)
 
-	if got != "" {
-		t.Errorf("expected taskfile to be empty, got %s", got)
+	if got != nil {
+		t.Errorf("expected Configs to be nil, got %s", got)
 	}
 	if err == nil {
 		t.Fatalf("expected error, got nil")
