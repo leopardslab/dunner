@@ -4,13 +4,14 @@
 [![Codecov branch](https://img.shields.io/codecov/c/github/leopardslab/dunner/master.svg)](https://codecov.io/gh/leopardslab/dunner)
 [![Build Status](https://travis-ci.org/leopardslab/Dunner.svg?branch=master)](https://travis-ci.org/leopardslab/Dunner)
 [![GoDoc](https://godoc.org/github.com/leopardslab/dunner?status.svg)](https://godoc.org/github.com/leopardslab/dunner)
+[![GoReport](https://goreportcard.com/badge/github.com/leopardslab/dunner)](https://goreportcard.com/report/github.com/leopardslab/dunner)
+[![Join the chat at https://gitter.im/LeaopardLabs/Dunner](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/LeaopardLabs/Dunner)
 
 > The Docker Task Runner
 
-Dunner is a task runner tool like Grunt but uses Docker images like CircleCI do. You can define tasks and steps of the tasks in your `.dunner.yaml` file and then run these steps with `dunner do <taskname>`.
+Dunner is a task runner tool based on Docker, simple and flexible. You can define tasks and configure the environment in your `.dunner.yaml` file and then run as `dunner do <taskname>`.
 
-
-Example `.dunner.yaml`
+Example `.dunner.yaml`:
 
 ```yaml
 deploy:
@@ -40,34 +41,23 @@ status:
    - AWS_DEFAULT_REGION=us-east1
 ```
 
-Now you can use as,
-* `dunner do deploy`
-* `dunner do status prod`
+Running `dunner do deploy` from command-line executes `deploy` task inside a Docker container. It creates a Docker container using specified image, executes given commands and shows results, all with just simple configuration!
 
-# Guides
 
-* [User Guide](https://github.com/leopardslab/dunner/wiki/User-Guide)
-* [Installation Guide](https://github.com/leopardslab/dunner/wiki/Installation-Guide)
-* [Developer Guide](https://github.com/leopardslab/dunner/wiki/Developer-Guide)
+# Getting Started
 
-## Development Plan 
+Read more about [Why Dunner](https://github.com/leopardslab/dunner/wiki/Introduction-to-Dunner) and refer our guides for installation and usage.
 
-### [`v0.1`](https://github.com/leopardslab/dunner/milestone/2)
-- [x] Ability to define set of tasks and steps and run the task
-- [x] Mount current dir as a volume
-- [x] Ability to pass arguments to tasks
-### [`v1.0`](https://github.com/leopardslab/dunner/milestone/1) 
-- [x] Ability to add ENV variables
-- [x] Ability to define the sub-dir that should be mounted to the task containers
-- [x] Ability to mount other dirs to the task containers
-- [x] Ability to use a task as a step for another task
-- [x] Ability to get ENV, param, etc values from host environment variables or `.env` file
-- [x] Ability to install as a Snap package
+| [**User Documentation**](https://github.com/leopardslab/dunner/wiki/User-Guide)     | [**Installation Guide**](https://github.com/leopardslab/dunner/wiki/Installation-Guide)     | [**Dunner Examples**](https://github.com/leopardslab/dunner-cookbook)           | [**Contributing**](https://github.com/leopardslab/dunner/wiki/Developer-Guide)           | [**Dunner GoCD Plugin**](https://github.com/leopardslab/dunner-gocd-plugin#dunner-gocd-plugin)           | 
+|:-------------------------------------:|:-------------------------------:|:-----------------------------------:|:---------------------------------------------:| :--------------------------------------:|
+| Learn more about using Dunner | Getting started with Dunner | Dunner Cookbook Recipes | How can you contribute to Dunner? | Have a look at Dunner [GoCD](https://www.gocd.org/) Plugin |
 
-### [`v2.0`](https://github.com/leopardslab/dunner/milestone/3) 
-- [x] Ability to Dry Run 
-- [x] Ability to verfiy the `.dunner.yaml` file
-- [x] Ability to define multiple commands for the same step
-- [x] Ability to install as a Deb package
-- [x] Ability to install as a RPM package
-- [x] Ability to install as a Brew package
+
+## Development Plan
+
+Have a look at [Dunner Milestones](https://github.com/leopardslab/dunner/milestones) for our future plans.
+
+
+## Contributing
+
+We'd love your help to fix bugs and add features. The maintainers actively manage the issues list, and try to highlight issues suitable for newcomers. The project follows the typical GitHub pull request model. Before starting any work, please either comment on an existing issue, or file a new one. Refer our [Developer Guide](https://github.com/leopardslab/dunner/wiki/Developer-Guide) for more.
