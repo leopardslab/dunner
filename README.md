@@ -44,6 +44,19 @@ status:
 Running `dunner do deploy` from command-line executes `deploy` task inside a Docker container. It creates a Docker container using specified image, executes given commands and shows results, all with just simple configuration!
 
 
+## Features
+
+* Easy [configuration](https://github.com/leopardslab/dunner/wiki/User-Guide#how-to-write-a-dunner-file) to run tasks inside container
+* [Multiple commands](https://github.com/leopardslab/dunner/wiki/User-Guide#multiple-commands)
+* [Mount external directories](https://github.com/leopardslab/dunner/wiki/User-Guide#mounting-external-directories)
+* [Environment Variables](https://github.com/leopardslab/dunner/wiki/User-Guide#exporting-environment-variables)
+* [Pass arguments through CLI](https://github.com/leopardslab/dunner/wiki/User-Guide#passing-arguments-through-cli)
+* [Add dependent task](https://github.com/leopardslab/dunner/wiki/User-Guide#use-a-task-as-a-step-for-another-task)
+* [Asynchronous mode](https://github.com/leopardslab/dunner/wiki/User-Guide#asynchronous-mode)
+* [Dry Run](https://github.com/leopardslab/dunner/wiki/User-Guide#dry-run)
+
+and [more](https://github.com/leopardslab/dunner/wiki/User-Guide)...
+
 # Getting Started
 
 Read more about [Why Dunner](https://github.com/leopardslab/dunner/wiki/Introduction-to-Dunner) and refer our guides for installation and usage.
