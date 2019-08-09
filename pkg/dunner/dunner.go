@@ -126,7 +126,14 @@ func Process(configs *config.Configs, s *docker.Step, wg *sync.WaitGroup, args [
 
 // PassArgs replaces argument variables,of the form '`$d`', where d is a number, with dth argument.
 func PassArgs(s *docker.Step, args *[]string) error {
-	for i, cmd := range s.Commands {
+	var gErr error
+	var commands [][]string
+	if s.Command != nil {
+		commands = [][]string{s.Command}
+	} else {
+		commands = s.Commands
+	}
+	for i, cmd := range commands {
 		for j, subStr := range cmd {
 			regex := regexp.MustCompile(`\$[1-9][0-9]*`)
 			subStr = regex.ReplaceAllStringFunc(subStr, func(str string) string {
@@ -134,12 +141,23 @@ func PassArgs(s *docker.Step, args *[]string) error {
 				if err != nil {
 					log.Fatal(err)
 				}
+				if j > len(*args) {
+					gErr = fmt.Errorf(`dunner: insufficient number of arguments passed`)
+					return ""
+				}
 				return (*args)[j-1]
 			})
-			s.Commands[i][j] = subStr
+			if gErr != nil {
+				return gErr
+			}
+			if s.Command != nil {
+				s.Command[j] = subStr
+			} else {
+				s.Commands[i][j] = subStr
+			}
 		}
 	}
-	return nil
+	return gErr
 }
 
 // getDunnerUser returns the user value from step, if empty returns first found value in order:
