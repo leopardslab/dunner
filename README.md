@@ -46,7 +46,7 @@ Running `dunner do deploy` from command-line executes `deploy` task inside a Doc
 
 ## Features
 
-* Easy [configuration](https://github.com/leopardslab/dunner/wiki/User-Guide#how-to-write-a-dunner-file) to run tasks inside container
+* [Easy Configuration](https://github.com/leopardslab/dunner/wiki/User-Guide#how-to-write-a-dunner-file) to run tasks inside container
 * [Multiple commands](https://github.com/leopardslab/dunner/wiki/User-Guide#multiple-commands)
 * [Mount external directories](https://github.com/leopardslab/dunner/wiki/User-Guide#mounting-external-directories)
 * [Environment Variables](https://github.com/leopardslab/dunner/wiki/User-Guide#exporting-environment-variables)
