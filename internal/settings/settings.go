@@ -1,6 +1,8 @@
 package settings
 
 import (
+	"github.com/leopardslab/dunner/internal"
+
 	"github.com/spf13/viper"
 )
 
@@ -21,7 +23,7 @@ func Init() {
 	viper.AutomaticEnv()
 
 	// Files
-	viper.SetDefault("DunnerTaskFile", ".dunner.yaml")
+	viper.SetDefault("DunnerTaskFile", internal.DefaultDunnerTaskFileName)
 	viper.SetDefault("DotenvFile", ".env")
 	viper.SetDefault("GlobalLogFile", "/var/log/dunner/logs/")
 	viper.SetDefault("LocalLogFile", nil)

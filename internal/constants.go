@@ -20,3 +20,6 @@ build:
 
 // DefaultTaskFilePermission is the default file permission of dunner task file
 const DefaultTaskFilePermission = 0644
+
+// DefaultDunnerTaskFileName is the default dunner task file name
+const DefaultDunnerTaskFileName = ".dunner.yaml"

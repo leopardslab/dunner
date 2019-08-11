@@ -40,6 +40,7 @@ import (
 	"github.com/go-playground/locales/en"
 	ut "github.com/go-playground/universal-translator"
 	"github.com/joho/godotenv"
+	"github.com/leopardslab/dunner/internal"
 	"github.com/leopardslab/dunner/internal/logger"
 	"github.com/leopardslab/dunner/internal/util"
 	"github.com/leopardslab/dunner/pkg/docker"
@@ -257,7 +258,12 @@ func ParseMountDir(ctx context.Context, fl validator.FieldLevel) bool {
 // The default filename that is being read by Dunner during the time of execution is `dunner.yaml`,
 // but it can be changed using `--task-file` flag in the CLI.
 func GetConfigs(filename string) (*Configs, error) {
-	fileContents, err := ioutil.ReadFile(filename)
+	taskFile, err := getDunnerTaskFile(filename)
+	if err != nil {
+		return nil, err
+	}
+
+	fileContents, err := ioutil.ReadFile(taskFile)
 	if err != nil {
 		return nil, err
 	}
@@ -273,6 +279,36 @@ func GetConfigs(filename string) (*Configs, error) {
 	}
 
 	return &configs, nil
+}
+
+// getDunnerTaskFile returns the dunner task file path.
+// If `filename` is not default task file, it returns as-is.
+// It returns task file in current directory if exists
+// this routine keeps going upwards searching for task file
+func getDunnerTaskFile(filename string) (string, error) {
+	if internal.DefaultDunnerTaskFileName != filename {
+		return filename, nil
+	}
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	failErr := fmt.Errorf("failed to find Dunner task file")
+
+	for {
+		taskFile := filepath.Join(dir, internal.DefaultDunnerTaskFileName)
+		if util.FileExists(taskFile) {
+			return taskFile, nil
+		}
+		if dir == filepath.Clean(fmt.Sprintf("%c", os.PathSeparator)) || dir == "" {
+			return "", failErr
+		}
+		oldDir := dir
+		dir = filepath.Clean(fmt.Sprintf("%s%c..", dir, os.PathSeparator))
+		if dir == oldDir {
+			return "", failErr
+		}
+	}
 }
 
 func loadDotEnv() {
