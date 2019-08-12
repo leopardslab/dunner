@@ -7,6 +7,7 @@ package docker
 import (
 	"bytes"
 	"context"
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -76,7 +77,23 @@ func (step Step) Exec() error {
 		log.Fatal(err)
 	}
 
-	log.Infof("Pulling image: '%s'", step.Image)
+	done := false
+	go func() {
+		ticker := time.Tick(time.Second / 2)
+		busyChars := []string{`-`, `\`, `|`, `/`}
+		x := 0
+		for !done {
+			x %= 4
+			<-ticker
+			if flag.Lookup("test.v") == nil {
+				fmt.Printf("\rPulling image: '%s'\t%s", step.Image, busyChars[x])
+			}
+			x += 1
+		}
+		fmt.Print("\r")
+		log.Infof("Pulled image: '%s'", step.Image)
+	}()
+
 	out, err := cli.ImagePull(ctx, step.Image, types.ImagePullOptions{})
 	if err != nil {
 		log.Fatal(err)
@@ -93,6 +110,8 @@ func (step Step) Exec() error {
 			log.Fatal(err)
 		}
 	}
+
+	done = true
 
 	if err = out.Close(); err != nil {
 		log.Fatal(err)
