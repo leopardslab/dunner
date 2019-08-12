@@ -86,7 +86,7 @@ func (step Step) Exec() error {
 			x %= 4
 			<-ticker
 			if flag.Lookup("test.v") == nil {
-				fmt.Printf("\rPulling image: '%s'\t%s", step.Image, busyChars[x])
+				fmt.Printf("\rPulling image: '%s'... %s", step.Image, busyChars[x])
 			}
 			x += 1
 		}
@@ -174,26 +174,56 @@ func (step Step) Exec() error {
 
 	dryRun := viper.GetBool("Dry-run")
 	for _, cmd := range commands {
-		log.Infof(
-			"Running task '%+v' on '%+v' Docker with command '%+v'",
-			step.Task,
-			step.Image,
-			strings.Join(cmd, " "),
-		)
+		done := false
+		show := make(chan bool)
+		go func() {
+			ticker := time.Tick(time.Second / 2)
+			busyChars := []string{`-`, `\`, `|`, `/`}
+			x := 0
+			for !done {
+				x %= 4
+				<-ticker
+				//if flag.Lookup("test.v") == nil {
+				fmt.Printf("\rRunning command '%s' of '%s' task on a container of '%s' image... %s",
+					strings.Join(cmd, " "),
+					step.Task,
+					step.Image,
+					busyChars[x],
+				)
+				//fmt.Printf(
+				//	"\rRunning task '%s' on '%s' docker with command '%s'\t%s",
+				//	step.Task,
+				//	step.Image,
+				//	strings.Join(cmd, " "),
+				//	busyChars[x],
+				//)
+				//}
+				x += 1
+			}
+			fmt.Print("\r")
+			log.Infof("Finished running command '%+s' on '%+s' docker",
+				strings.Join(cmd, " "),
+				step.Image,
+			)
+			show <- true
+			return
+		}()
 
 		if dryRun {
 			continue
 		}
-
 		r, err := runCmd(ctx, cli, resp.ID, cmd)
+		done = true
 		if err != nil {
 			log.Fatal(err)
 		}
-		if r != nil && r.Output != "" {
-			fmt.Printf(`OUT: %s`, r.Output)
-		}
-		if r != nil && r.Error != "" {
-			fmt.Printf(`ERR: %s`, r.Error)
+		if <-show {
+			if r != nil && r.Output != "" {
+				fmt.Printf(`OUT: %s`, r.Output)
+			}
+			if r != nil && r.Error != "" {
+				fmt.Printf(`ERR: %s`, r.Error)
+			}
 		}
 	}
 	return nil
@@ -230,6 +260,7 @@ func ExtractResult(reader io.Reader, command []string) *Result {
 	if _, err := stdcopy.StdCopy(&out, &errOut, reader); err != nil {
 		log.Fatal(err)
 	}
+
 	var result = Result{
 		Output: out.String(),
 		Error:  errOut.String(),
