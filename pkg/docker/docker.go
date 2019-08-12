@@ -181,15 +181,17 @@ func (step Step) Exec() error {
 			busyChars := []string{`-`, `\`, `|`, `/`}
 			x := 0
 			for !done {
-				x %= 4
-				<-ticker
-				fmt.Printf("\rRunning command '%s' of '%s' task on a container of '%s' image... %s",
-					strings.Join(cmd, " "),
-					step.Task,
-					step.Image,
-					busyChars[x],
-				)
-				x++
+				if flag.Lookup("test.v") == nil {
+					x %= 4
+					<-ticker
+					fmt.Printf("\rRunning command '%s' of '%s' task on a container of '%s' image... %s",
+						strings.Join(cmd, " "),
+						step.Task,
+						step.Image,
+						busyChars[x],
+					)
+					x++
+				}
 			}
 			fmt.Print("\r")
 			log.Infof("Finished running command '%+s' on '%+s' docker",
