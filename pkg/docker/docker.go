@@ -88,7 +88,7 @@ func (step Step) Exec() error {
 			if flag.Lookup("test.v") == nil {
 				fmt.Printf("\rPulling image: '%s'... %s", step.Image, busyChars[x])
 			}
-			x += 1
+			x++
 		}
 		fmt.Print("\r")
 		log.Infof("Pulled image: '%s'", step.Image)
@@ -183,22 +183,13 @@ func (step Step) Exec() error {
 			for !done {
 				x %= 4
 				<-ticker
-				//if flag.Lookup("test.v") == nil {
 				fmt.Printf("\rRunning command '%s' of '%s' task on a container of '%s' image... %s",
 					strings.Join(cmd, " "),
 					step.Task,
 					step.Image,
 					busyChars[x],
 				)
-				//fmt.Printf(
-				//	"\rRunning task '%s' on '%s' docker with command '%s'\t%s",
-				//	step.Task,
-				//	step.Image,
-				//	strings.Join(cmd, " "),
-				//	busyChars[x],
-				//)
-				//}
-				x += 1
+				x++
 			}
 			fmt.Print("\r")
 			log.Infof("Finished running command '%+s' on '%+s' docker",
