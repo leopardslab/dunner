@@ -77,18 +77,26 @@ func (step Step) Exec() error {
 		log.Fatal(err)
 	}
 
-	done := false
+	done := make(chan bool)
 	go func() {
 		ticker := time.Tick(time.Second / 2)
 		busyChars := []string{`-`, `\`, `|`, `/`}
 		x := 0
-		for !done {
-			x %= 4
-			<-ticker
-			if flag.Lookup("test.v") == nil {
-				fmt.Printf("\rPulling image: '%s'... %s", step.Image, busyChars[x])
+	loop:
+		for true {
+			select {
+			case stop := <-done:
+				if stop {
+					break loop
+				}
+			default:
+				x %= 4
+				<-ticker
+				if flag.Lookup("test.v") == nil {
+					fmt.Printf("\rPulling image: '%s'... %s", step.Image, busyChars[x])
+				}
+				x++
 			}
-			x++
 		}
 		fmt.Print("\r")
 		log.Infof("Pulled image: '%s'", step.Image)
@@ -111,7 +119,7 @@ func (step Step) Exec() error {
 		}
 	}
 
-	done = true
+	done <- true
 
 	if err = out.Close(); err != nil {
 		log.Fatal(err)
@@ -174,23 +182,31 @@ func (step Step) Exec() error {
 
 	dryRun := viper.GetBool("Dry-run")
 	for _, cmd := range commands {
-		done := false
+		done := make(chan bool)
 		show := make(chan bool)
 		go func() {
 			ticker := time.Tick(time.Second / 2)
 			busyChars := []string{`-`, `\`, `|`, `/`}
 			x := 0
-			for !done {
-				if flag.Lookup("test.v") == nil {
-					x %= 4
-					<-ticker
-					fmt.Printf("\rRunning command '%s' of '%s' task on a container of '%s' image... %s",
-						strings.Join(cmd, " "),
-						step.Task,
-						step.Image,
-						busyChars[x],
-					)
-					x++
+		loop:
+			for true {
+				select {
+				case stop := <-done:
+					if stop {
+						break loop
+					}
+				default:
+					if flag.Lookup("test.v") == nil {
+						x %= 4
+						<-ticker
+						fmt.Printf("\rRunning command '%s' of '%s' task on a container of '%s' image... %s",
+							strings.Join(cmd, " "),
+							step.Task,
+							step.Image,
+							busyChars[x],
+						)
+						x++
+					}
 				}
 			}
 			fmt.Print("\r")
@@ -206,7 +222,7 @@ func (step Step) Exec() error {
 			continue
 		}
 		r, err := runCmd(ctx, cli, resp.ID, cmd)
-		done = true
+		done <- true
 		if err != nil {
 			log.Fatal(err)
 		}
