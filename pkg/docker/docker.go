@@ -59,9 +59,10 @@ type Result struct {
 // corresponding updates.
 func (step Step) Exec() error {
 	var (
-		async   = viper.GetBool("Async")
-		dryRun  = viper.GetBool("Dry-run")
-		verbose = viper.GetBool("Verbose")
+		async     = viper.GetBool("Async")
+		dryRun    = viper.GetBool("Dry-run")
+		verbose   = viper.GetBool("Verbose")
+		forcePull = viper.GetBool("Force-pull")
 	)
 
 	var (
@@ -83,7 +84,11 @@ func (step Step) Exec() error {
 		log.Fatal(err)
 	}
 
-	if viper.GetBool("Force-pull") || !checkImageExist(ctx, cli, step.Image, false) {
+	check, err := CheckImageExist(ctx, cli, step.Image, false)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if forcePull || !check {
 		loadingMsg := fmt.Sprintf("Pulling image: '%s'", step.Image)
 		var done chan bool
 		if !async {
@@ -102,7 +107,7 @@ func (step Step) Exec() error {
 		if err != nil {
 			log.Debug(err)
 			log.Infoln("Failed to fetch docker image from Docker Hub, checking in the host...")
-			if !checkImageExist(ctx, cli, step.Image, true) {
+			if check, _ = CheckImageExist(ctx, cli, step.Image, true); !check {
 				return fmt.Errorf(`docker: failed to pull image %s: %s`, step.Image, err.Error())
 			}
 		}
@@ -265,7 +270,7 @@ func runCmd(ctx context.Context, cli *client.Client, containerID string, command
 		log.Fatal(err)
 	}
 	if info.ExitCode != 0 {
-		return result, fmt.Errorf("Command execution failed with exit code %d", info.ExitCode)
+		return result, fmt.Errorf("`docker: command execution failed with exit code %d", info.ExitCode)
 	}
 
 	return result, nil
@@ -286,7 +291,8 @@ func ExtractResult(reader io.Reader, command []string) *Result {
 	return &result
 }
 
-func checkImageExist(ctx context.Context, cli *client.Client, image string, notag bool) bool {
+// CheckImageExist checks for the image whether it is present on the host machine or not.
+func CheckImageExist(ctx context.Context, cli *client.Client, image string, notag bool) (bool, error) {
 	log.Debugf("docker: checking existence of the image '%s'", image)
 	var splitImage = strings.Split(image, ":")
 	if len(splitImage) <= 2 {
@@ -299,17 +305,16 @@ func checkImageExist(ctx context.Context, cli *client.Client, image string, nota
 				if len(splitImage) < 2 && notag {
 					if strings.Split(rt, ":")[0] == image {
 						log.Infof("Image '%s' exists with the host", image)
-						return true
+						return true, nil
 					}
 				}
 				if rt == image {
 					log.Infof("Image '%s' exists with the host", image)
-					return true
+					return true, nil
 				}
 			}
 		}
-	} else if len(splitImage) > 2 {
-		log.Errorf(`docker: incorrect format for image name`)
+		return false, nil
 	}
-	return false
+	return false, fmt.Errorf(`docker: incorrect format for image name`)
 }

@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"testing"
 
+	"context"
+
+	"github.com/docker/docker/client"
 	"github.com/leopardslab/dunner/internal/settings"
 	"github.com/spf13/viper"
 )
@@ -112,4 +115,45 @@ func ExampleStep_execDryRun() {
 		panic(err)
 	}
 	// Output:
+}
+
+func TestCheckImageExist_local(t *testing.T) {
+	testImg := "test-image"
+	check, err := checkImage(testImg, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !check {
+		t.Fatal("Prebuilt image could not be identified")
+	}
+}
+
+func TestCheckImageExist_notPresent(t *testing.T) {
+	testImg := "random-image"
+	check, err := checkImage(testImg, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if check {
+		t.Fatal("Wrong identification, result is false positive")
+	}
+}
+
+func TestCheckImageExist_invalid(t *testing.T) {
+	testImg := "random-image:tag:invalid:format"
+	_, err := checkImage(testImg, true)
+	expectedErr := fmt.Errorf(`docker: incorrect format for image name`)
+	if err == nil || err.Error() != expectedErr.Error() {
+		t.Fatal("Wrong image name format did not return appropriate error")
+	}
+}
+
+func checkImage(img string, notag bool) (bool, error) {
+	ctx := context.Background()
+	cli, err := client.NewClientWithOpts(client.FromEnv)
+	if err != nil {
+		log.Fatal(err)
+	}
+	cli.NegotiateAPIVersion(ctx)
+	return CheckImageExist(ctx, cli, img, notag)
 }
