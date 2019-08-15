@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/fatih/color"
+	"github.com/spf13/viper"
 )
 
 func TestErrorOutput(t *testing.T) {
@@ -25,5 +26,15 @@ func TestErrorOutput(t *testing.T) {
 
 	if got != escaped {
 		t.Fatalf("expected: %s, got: %s", escaped, got)
+	}
+}
+
+func TestInitColorOutput_True(t *testing.T) {
+	viper.Set("No-color", true)
+
+	InitColorOutput()
+
+	if color.NoColor != true {
+		t.Fatalf("expected no-color to be set as true, but got %v", color.NoColor)
 	}
 }
