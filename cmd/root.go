@@ -63,6 +63,7 @@ func init() {
 		log.Fatal(err)
 	}
 
+	// No color output
 	rootCmd.PersistentFlags().Bool("no-color", false, "No colored output")
 	if err := viper.BindPFlag("No-color", rootCmd.PersistentFlags().Lookup("no-color")); err != nil {
 		log.Fatal(err)
