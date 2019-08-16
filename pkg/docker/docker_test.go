@@ -1,6 +1,8 @@
 package docker
 
 import (
+	"fmt"
+
 	"github.com/leopardslab/dunner/internal/settings"
 	"github.com/spf13/viper"
 )
@@ -24,8 +26,7 @@ func ExampleStep_Exec() {
 	// Output: OUT: v10.15.0
 }
 
-// WorkingDirAbs
-func ExampleStep() {
+func ExampleStep_workingDirAbs() {
 	var testNodeVersion = "10.15.0"
 	var absPath = "/go"
 	err := runCommand([]string{"pwd"}, absPath, testNodeVersion)
@@ -36,8 +37,7 @@ func ExampleStep() {
 	// Output: OUT: /go
 }
 
-// WorkingDirRel
-func Example() {
+func Example_workingDirRel() {
 	var testNodeVersion = "10.15.0"
 	var relPath = "./"
 	err := runCommand([]string{"pwd"}, relPath, testNodeVersion)
@@ -67,10 +67,14 @@ func ExampleStep_execWithErr() {
 	var relPath = "./"
 	err := runCommand([]string{"ls", "/invalid_dir" +
 		""}, relPath, testNodeVersion)
-	if err != nil {
+	if err == nil {
 		panic(err)
 	}
-	// Output: ERR: ls: cannot access '/invalid_dir': No such file or directory
+	expectedErr := "Command execution failed with exit code 2"
+	if err.Error() != expectedErr {
+		panic(fmt.Errorf("expected error: %s, got: %s", expectedErr, err.Error()))
+	}
+	// Output: OUT: ls: cannot access '/invalid_dir': No such file or directory
 }
 
 func ExampleStep_execDryRun() {

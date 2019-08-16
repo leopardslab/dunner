@@ -73,29 +73,29 @@ func (step Step) Exec() error {
 
 	path, err := filepath.Abs(hostMountFilepath)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	log.Infof("Pulling image: '%s'", step.Image)
 	out, err := cli.ImagePull(ctx, step.Image, types.ImagePullOptions{})
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	termFd, isTerm := term.GetFdInfo(os.Stdout)
 	var verbose = viper.GetBool("Verbose")
 	if verbose {
 		if err = jsonmessage.DisplayJSONMessagesStream(out, os.Stdout, termFd, isTerm, nil); err != nil {
-			log.Fatal(err)
+			return err
 		}
 	} else {
 		if err = jsonmessage.DisplayJSONMessagesStream(out, ioutil.Discard, termFd, isTerm, nil); err != nil {
-			log.Fatal(err)
+			return err
 		}
 	}
 
 	if err = out.Close(); err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	var containerWorkingDir = containerDefaultWorkingDir
@@ -125,7 +125,7 @@ func (step Step) Exec() error {
 		},
 		nil, "")
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	if len(resp.Warnings) > 0 {
@@ -135,7 +135,7 @@ func (step Step) Exec() error {
 	}
 
 	if err = cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	defer func() {
@@ -167,14 +167,14 @@ func (step Step) Exec() error {
 		}
 
 		r, err := runCmd(ctx, cli, resp.ID, cmd)
-		if err != nil {
-			log.Fatal(err)
-		}
 		if r != nil && r.Output != "" {
 			fmt.Printf(`OUT: %s`, r.Output)
 		}
 		if r != nil && r.Error != "" {
 			fmt.Printf(`ERR: %s`, r.Error)
+		}
+		if err != nil {
+			return err
 		}
 	}
 	return nil
@@ -200,13 +200,22 @@ func runCmd(ctx context.Context, cli *client.Client, containerID string, command
 	}
 	defer resp.Close()
 
-	return ExtractResult(resp.Reader, command), nil
+	result := ExtractResult(resp.Reader, command)
+
+	info, err := cli.ContainerExecInspect(ctx, exec.ID)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if info.ExitCode != 0 {
+		return result, fmt.Errorf("Command execution failed with exit code %d", info.ExitCode)
+	}
+
+	return result, nil
 }
 
 // ExtractResult can parse output and/or error corresponding to the command passed as an argument,
 // from an io.Reader and convert to an object of strings.
 func ExtractResult(reader io.Reader, command []string) *Result {
-
 	var out, errOut bytes.Buffer
 	if _, err := stdcopy.StdCopy(&out, &errOut, reader); err != nil {
 		log.Fatal(err)
