@@ -165,8 +165,8 @@ func (step Step) Exec() error {
 		if dryRun {
 			continue
 		}
-
 		r, err := runCmd(ctx, cli, resp.ID, cmd)
+
 		if err != nil {
 			log.Fatal(err)
 		}

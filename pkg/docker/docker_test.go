@@ -1,6 +1,8 @@
 package docker
 
 import (
+	"testing"
+
 	"github.com/leopardslab/dunner/internal/settings"
 	"github.com/spf13/viper"
 )
@@ -62,15 +64,13 @@ func runCommand(command []string, dir string, nodeVer string) error {
 	return step.Exec()
 }
 
-func ExampleStep_execWithErr() {
+func TestStep_execWithErr(t *testing.T) {
 	var testNodeVersion = "10.15.0"
 	var relPath = "./"
-	err := runCommand([]string{"ls", "/invalid_dir" +
-		""}, relPath, testNodeVersion)
+	err := runCommand([]string{"ls", "/invalid_dir"}, relPath, testNodeVersion)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
-	// Output: ERR: ls: cannot access '/invalid_dir': No such file or directory
 }
 
 func ExampleStep_execDryRun() {
