@@ -2,10 +2,23 @@ package docker
 
 import (
 	"fmt"
+	"testing"
 
 	"github.com/leopardslab/dunner/internal/settings"
 	"github.com/spf13/viper"
 )
+
+func TestExecWithInvalidImageName(t *testing.T) {
+	imageName := "^&^(^(*_invalid"
+	step := Step{Image: imageName}
+
+	err := step.Exec()
+
+	expectedErr := fmt.Sprintf("Failed to pull image %s: invalid reference format", imageName)
+	if err == nil || err.Error() != expectedErr {
+		t.Fatalf("expected error: %s, got: %s", expectedErr, err)
+	}
+}
 
 func ExampleStep_Exec() {
 	settings.Init()

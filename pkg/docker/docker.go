@@ -71,31 +71,31 @@ func (step Step) Exec() error {
 	}
 	cli.NegotiateAPIVersion(ctx)
 
-	path, err := filepath.Abs(hostMountFilepath)
-	if err != nil {
-		return err
+	path, pErr := filepath.Abs(hostMountFilepath)
+	if pErr != nil {
+		return fmt.Errorf("failed to get host mount file path: %s", pErr.Error())
 	}
 
 	log.Infof("Pulling image: '%s'", step.Image)
 	out, err := cli.ImagePull(ctx, step.Image, types.ImagePullOptions{})
 	if err != nil {
-		return err
+		return fmt.Errorf("Failed to pull image %s: %s", step.Image, err.Error())
 	}
 
 	termFd, isTerm := term.GetFdInfo(os.Stdout)
 	var verbose = viper.GetBool("Verbose")
 	if verbose {
 		if err = jsonmessage.DisplayJSONMessagesStream(out, os.Stdout, termFd, isTerm, nil); err != nil {
-			return err
+			log.Fatal(err)
 		}
 	} else {
 		if err = jsonmessage.DisplayJSONMessagesStream(out, ioutil.Discard, termFd, isTerm, nil); err != nil {
-			return err
+			log.Fatal(err)
 		}
 	}
 
 	if err = out.Close(); err != nil {
-		return err
+		log.Fatal(err)
 	}
 
 	var containerWorkingDir = containerDefaultWorkingDir
@@ -125,7 +125,7 @@ func (step Step) Exec() error {
 		},
 		nil, "")
 	if err != nil {
-		return err
+		log.Fatal(err)
 	}
 
 	if len(resp.Warnings) > 0 {
@@ -135,7 +135,7 @@ func (step Step) Exec() error {
 	}
 
 	if err = cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
-		return err
+		log.Fatal(err)
 	}
 
 	defer func() {
