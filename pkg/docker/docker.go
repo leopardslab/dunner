@@ -73,7 +73,7 @@ func (step Step) Exec() error {
 
 	path, err := filepath.Abs(hostMountFilepath)
 	if err != nil {
-		return fmt.Errorf("failed to get host mount file path: %s", err.Error())
+		return fmt.Errorf("Failed to get host mount file path: %s", err.Error())
 	}
 
 	log.Infof("Pulling image: '%s'", step.Image)

@@ -90,6 +90,16 @@ func ExampleStep_execWithErr() {
 	// Output: ERR: ls: cannot access '/invalid_dir': No such file or directory
 }
 
+func TestStepExecSuccess(t *testing.T) {
+	var testNodeVersion = "10.15.0"
+
+	err := runCommand([]string{"node", "--version"}, "./", testNodeVersion)
+
+	if err != nil {
+		t.Errorf("expected no error, got: %s", err)
+	}
+}
+
 func ExampleStep_execDryRun() {
 	dryRun := viper.GetBool("Dry-run")
 	viper.Set("Dry-run", true)
