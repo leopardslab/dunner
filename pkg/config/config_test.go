@@ -12,21 +12,28 @@ import (
 	"github.com/leopardslab/dunner/internal"
 	"github.com/leopardslab/dunner/internal/util"
 	"github.com/leopardslab/dunner/pkg/docker"
+	"github.com/spf13/viper"
 	validator "gopkg.in/go-playground/validator.v9"
 )
 
 func TestGetConfigs(t *testing.T) {
 	var tmpFilename = ".testdunner.yaml"
 
+	if err := os.Setenv("MYDUNNER", "dunner"); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Setenv("MYDUNNER", "")
+
 	var content = []byte(`
 test:
-  - image: node
+  - image: node:10.15.0
     user: 20
     commands:
       - ["node", "--version"]
       - ["npm", "--version"]
     envs:
-      - MYVAR=MYVAL`)
+      - MYVAR=MYVAL
+      - MYUSR=` + "`$MYDUNNER`")
 
 	tmpFile, err := ioutil.TempFile("", tmpFilename)
 	if err != nil {
@@ -50,10 +57,10 @@ test:
 
 	var task = Task{
 		Name:     "",
-		Image:    "node",
+		Image:    "node:10.15.0",
 		Commands: [][]string{{"node", "--version"}, {"npm", "--version"}},
 		User:     "20",
-		Envs:     []string{"MYVAR=MYVAL"},
+		Envs:     []string{"MYVAR=MYVAL", "MYUSR=dunner"},
 	}
 	var tasks = make(map[string][]Task)
 	tasks["test"] = []Task{task}
@@ -65,6 +72,43 @@ test:
 		t.Fatalf("Output not equal to expected; %v != %v", expected, *pout)
 	}
 
+}
+
+func TestParseEnv_InvalidEnv(t *testing.T) {
+	tasks := make(map[string][]Task, 0)
+	task := getSampleTask()
+	task.Image = "node:10.15.0"
+	task.Envs = []string{"MYVAR=MYVAL", "MYUSR=dunner=invalid"}
+	tasks["test"] = []Task{task}
+	configs := &Configs{Tasks: tasks}
+
+	expectedErr := fmt.Errorf(
+		`config: invalid format of environment variable: %s`,
+		"MYUSR=dunner=invalid",
+	)
+
+	if err := ParseEnv(configs); err.Error() != expectedErr.Error() {
+		t.Fatalf("Did not receive proper error on invalid format of environment variable, %v != %v", err, expectedErr)
+	}
+}
+
+func TestParseEnv_EnvNotExist(t *testing.T) {
+	tasks := make(map[string][]Task, 0)
+	task := getSampleTask()
+	task.Image = "node:10.15.0"
+	task.Envs = []string{"MYVAR=MYVAL", "MYUSR=`$MYDUNNER`"}
+	tasks["test"] = []Task{task}
+	configs := &Configs{Tasks: tasks}
+
+	expectedErr := fmt.Errorf(
+		`config: could not find environment variable '%v' in %s file or among host environment variables`,
+		"MYDUNNER",
+		viper.GetString("DotenvFile"),
+	)
+
+	if err := ParseEnv(configs); err.Error() != expectedErr.Error() {
+		t.Fatalf("Did not receive proper error on invalid format of environment variable, %v != %v", err, expectedErr)
+	}
 }
 
 func TestConfigs_Validate(t *testing.T) {
