@@ -74,7 +74,7 @@ func ExampleStep_execWithErr() {
 	if err.Error() != expectedErr {
 		panic(fmt.Errorf("expected error: %s, got: %s", expectedErr, err.Error()))
 	}
-	// Output: OUT: ls: cannot access '/invalid_dir': No such file or directory
+	// Output: ERR: ls: cannot access '/invalid_dir': No such file or directory
 }
 
 func ExampleStep_execDryRun() {
