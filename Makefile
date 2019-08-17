@@ -52,7 +52,7 @@ lint:
 precommit: build test fmt lint vet
 
 test-setup:
-	@docker build --no-cache --tag 'test-image' $(TEST_IMAGE_DIR)
+	@docker build --no-cache --tag 'dunner/test-image' $(TEST_IMAGE_DIR)
 
 test-coverage:
 	@echo "mode: count" > coverage-all.out

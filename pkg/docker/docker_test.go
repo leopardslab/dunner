@@ -118,7 +118,7 @@ func ExampleStep_execDryRun() {
 }
 
 func TestCheckImageExist_local(t *testing.T) {
-	testImg := "test-image"
+	testImg := "dunner/test-image"
 	check, err := checkImage(testImg, true)
 	if err != nil {
 		t.Fatal(err)
