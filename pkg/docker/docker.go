@@ -7,7 +7,6 @@ package docker
 import (
 	"bytes"
 	"context"
-	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -24,6 +23,7 @@ import (
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/docker/docker/pkg/term"
 	"github.com/leopardslab/dunner/internal/logger"
+	"github.com/leopardslab/dunner/internal/util"
 	"github.com/spf13/viper"
 )
 
@@ -59,6 +59,12 @@ type Result struct {
 // corresponding updates.
 func (step Step) Exec() error {
 	var (
+		async   = viper.GetBool("Async")
+		dryRun  = viper.GetBool("Dry-run")
+		verbose = viper.GetBool("Verbose")
+	)
+
+	var (
 		hostMountFilepath          = viper.GetString("WorkingDirectory")
 		containerDefaultWorkingDir = "/dunner"
 		hostMountTarget            = "/dunner"
@@ -77,30 +83,20 @@ func (step Step) Exec() error {
 		log.Fatal(err)
 	}
 
-	done := make(chan bool)
-	go func() {
-		ticker := time.Tick(time.Second / 2)
-		busyChars := []string{`-`, `\`, `|`, `/`}
-		x := 0
-	loop:
-		for true {
-			select {
-			case stop := <-done:
-				if stop {
-					break loop
-				}
-			default:
-				x %= 4
-				<-ticker
-				if flag.Lookup("test.v") == nil {
-					fmt.Printf("\rPulling image: '%s'... %s", step.Image, busyChars[x])
-				}
-				x++
-			}
-		}
-		fmt.Print("\r")
-		log.Infof("Pulled image: '%s'", step.Image)
-	}()
+	loadingMsg := fmt.Sprintf("Pulling image: '%s'", step.Image)
+
+	var done chan bool
+	if !async {
+		done = make(chan bool)
+		go util.ShowLoadingMessage(
+			loadingMsg,
+			fmt.Sprintf("Pulled image: '%s'", step.Image),
+			&done,
+			nil,
+		)
+	} else {
+		log.Info(loadingMsg)
+	}
 
 	out, err := cli.ImagePull(ctx, step.Image, types.ImagePullOptions{})
 	if err != nil {
@@ -108,7 +104,6 @@ func (step Step) Exec() error {
 	}
 
 	termFd, isTerm := term.GetFdInfo(os.Stdout)
-	var verbose = viper.GetBool("Verbose")
 	if verbose {
 		if err = jsonmessage.DisplayJSONMessagesStream(out, os.Stdout, termFd, isTerm, nil); err != nil {
 			log.Fatal(err)
@@ -119,8 +114,9 @@ func (step Step) Exec() error {
 		}
 	}
 
-	done <- true
-
+	if !async {
+		done <- true
+	}
 	if err = out.Close(); err != nil {
 		log.Fatal(err)
 	}
@@ -180,53 +176,47 @@ func (step Step) Exec() error {
 		commands = append(commands, step.Command)
 	}
 
-	dryRun := viper.GetBool("Dry-run")
 	for _, cmd := range commands {
-		done := make(chan bool)
-		show := make(chan bool)
-		go func() {
-			ticker := time.Tick(time.Second / 2)
-			busyChars := []string{`-`, `\`, `|`, `/`}
-			x := 0
-		loop:
-			for true {
-				select {
-				case stop := <-done:
-					if stop {
-						break loop
-					}
-				default:
-					if flag.Lookup("test.v") == nil {
-						x %= 4
-						<-ticker
-						fmt.Printf("\rRunning command '%s' of '%s' task on a container of '%s' image... %s",
-							strings.Join(cmd, " "),
-							step.Task,
-							step.Image,
-							busyChars[x],
-						)
-						x++
-					}
-				}
-			}
-			fmt.Print("\r")
-			log.Infof("Finished running command '%+s' on '%+s' docker",
-				strings.Join(cmd, " "),
-				step.Image,
+		finishedMsg := fmt.Sprintf(
+			"Finished running command '%s' on '%s' docker",
+			strings.Join(cmd, " "),
+			step.Image,
+		)
+		var (
+			done chan bool
+			show chan bool
+		)
+		if !async {
+			done = make(chan bool)
+			show = make(chan bool)
+			go util.ShowLoadingMessage(
+				fmt.Sprintf(
+					"Running command '%s' of '%s' task on a container of '%s' image",
+					strings.Join(cmd, " "),
+					step.Task,
+					step.Image,
+				),
+				finishedMsg,
+				&done,
+				&show,
 			)
-			show <- true
-			return
-		}()
+		}
 
 		if dryRun {
 			continue
 		}
 		r, err := runCmd(ctx, cli, resp.ID, cmd)
-		done <- true
+		if !async {
+			done <- true
+		}
+
 		if err != nil {
 			log.Fatal(err)
 		}
-		if <-show {
+		if async || <-show {
+			if async {
+				log.Info(finishedMsg)
+			}
 			if r != nil && r.Output != "" {
 				fmt.Printf(`OUT: %s`, r.Output)
 			}

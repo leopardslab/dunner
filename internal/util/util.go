@@ -1,6 +1,7 @@
 package util
 
 import (
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -9,7 +10,12 @@ import (
 	"os/exec"
 	"path"
 	"strings"
+	"time"
+
+	"github.com/leopardslab/dunner/internal/logger"
 )
+
+var log = logger.Log
 
 // HomeDir is the environment variable HOME
 var HomeDir = os.Getenv("HOME")
@@ -133,4 +139,37 @@ func getExecutableCommand(command ...string) *exec.Cmd {
 		cmd.Args = append([]string{command[0]})
 	}
 	return cmd
+}
+
+// ShowLoadingMessage is qn util function to show an inline loading message while the process is being carried out.
+// This MUST be run in a separate goroutine than the process.
+func ShowLoadingMessage(loadingMsg string, finalLog string, done *chan bool, show *chan bool) {
+	ticker := time.Tick(time.Second / 2)
+	busyChars := []string{`-`, `\`, `|`, `/`}
+	x := 0
+loop:
+	for true {
+		select {
+		case stop := <-*done:
+			if stop {
+				break loop
+			}
+		default:
+			if flag.Lookup("test.v") == nil {
+				x %= 4
+				<-ticker
+				fmt.Printf("\r%s... %s",
+					loadingMsg,
+					busyChars[x],
+				)
+				x++
+			}
+		}
+	}
+	fmt.Print("\r")
+	log.Info(finalLog)
+	if show != nil {
+		*show <- true
+	}
+	return
 }
