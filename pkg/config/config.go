@@ -126,8 +126,8 @@ type Task struct {
 	User string `yaml:"user"`
 }
 
-// Configs describes the parsed information from the dunner file. It is a map of task name as keys and the list of tasks
-// associated with it.
+// Configs describes the parsed information from the dunner file.
+// It is a map of task name as keys and the list of tasks associated with it.
 type Configs struct {
 	Tasks map[string][]Task `validate:"dive,keys,required,endkeys,required,min=1,required"`
 }

@@ -8,6 +8,9 @@ ifeq ($(VERSION),)
 VERSION := latest
 endif
 
+#Hooks
+PRECOMMIT_HOOK="./resources/git-hooks/pre-commit"
+
 #Go parameters
 GOCMD=go
 GOINSTALL=$(GOCMD) install
@@ -17,8 +20,11 @@ DEP=dep
 
 all: build test fmt lint vet
 
-setup: install
+setup: install hooks
 	@go get -u golang.org/x/lint/golint
+
+hooks:
+	@cp $(PRECOMMIT_HOOK) ./.git/hooks/pre-commit
 
 install: 
 	@$(DEP) ensure -v
