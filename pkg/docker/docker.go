@@ -100,7 +100,7 @@ func (step Step) Exec() error {
 
 	out, err := cli.ImagePull(ctx, step.Image, types.ImagePullOptions{})
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("Failed to pull image %s: %s", step.Image, err.Error())
 	}
 
 	termFd, isTerm := term.GetFdInfo(os.Stdout)
@@ -209,10 +209,6 @@ func (step Step) Exec() error {
 		if !async {
 			done <- true
 		}
-
-		if err != nil {
-			log.Fatal(err)
-		}
 		if async || <-show {
 			if async {
 				log.Info(finishedMsg)
@@ -223,6 +219,9 @@ func (step Step) Exec() error {
 			if r != nil && r.Error != "" {
 				fmt.Printf(`ERR: %s`, r.Error)
 			}
+		}
+		if err != nil {
+			return err
 		}
 	}
 	return nil
@@ -248,13 +247,22 @@ func runCmd(ctx context.Context, cli *client.Client, containerID string, command
 	}
 	defer resp.Close()
 
-	return ExtractResult(resp.Reader, command), nil
+	result := ExtractResult(resp.Reader, command)
+
+	info, err := cli.ContainerExecInspect(ctx, exec.ID)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if info.ExitCode != 0 {
+		return result, fmt.Errorf("Command execution failed with exit code %d", info.ExitCode)
+	}
+
+	return result, nil
 }
 
 // ExtractResult can parse output and/or error corresponding to the command passed as an argument,
 // from an io.Reader and convert to an object of strings.
 func ExtractResult(reader io.Reader, command []string) *Result {
-
 	var out, errOut bytes.Buffer
 	if _, err := stdcopy.StdCopy(&out, &errOut, reader); err != nil {
 		log.Fatal(err)

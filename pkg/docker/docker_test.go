@@ -1,9 +1,24 @@
 package docker
 
 import (
+	"fmt"
+	"testing"
+
 	"github.com/leopardslab/dunner/internal/settings"
 	"github.com/spf13/viper"
 )
+
+func TestExecWithInvalidImageName(t *testing.T) {
+	imageName := "^&^(^(*_invalid"
+	step := Step{Image: imageName}
+
+	err := step.Exec()
+
+	expectedErr := fmt.Sprintf("Failed to pull image %s: invalid reference format", imageName)
+	if err == nil || err.Error() != expectedErr {
+		t.Fatalf("expected error: %s, got: %s", expectedErr, err)
+	}
+}
 
 func ExampleStep_Exec() {
 	settings.Init()
@@ -24,8 +39,7 @@ func ExampleStep_Exec() {
 	// Output: OUT: v10.15.0
 }
 
-// WorkingDirAbs
-func ExampleStep() {
+func ExampleStep_workingDirAbs() {
 	var testNodeVersion = "10.15.0"
 	var absPath = "/go"
 	err := runCommand([]string{"pwd"}, absPath, testNodeVersion)
@@ -36,8 +50,7 @@ func ExampleStep() {
 	// Output: OUT: /go
 }
 
-// WorkingDirRel
-func Example() {
+func Example_workingDirRel() {
 	var testNodeVersion = "10.15.0"
 	var relPath = "./"
 	err := runCommand([]string{"pwd"}, relPath, testNodeVersion)
@@ -67,10 +80,24 @@ func ExampleStep_execWithErr() {
 	var relPath = "./"
 	err := runCommand([]string{"ls", "/invalid_dir" +
 		""}, relPath, testNodeVersion)
-	if err != nil {
+	if err == nil {
 		panic(err)
 	}
+	expectedErr := "Command execution failed with exit code 2"
+	if err.Error() != expectedErr {
+		panic(fmt.Errorf("expected error: %s, got: %s", expectedErr, err.Error()))
+	}
 	// Output: ERR: ls: cannot access '/invalid_dir': No such file or directory
+}
+
+func TestStepExecSuccess(t *testing.T) {
+	var testNodeVersion = "10.15.0"
+
+	err := runCommand([]string{"node", "--version"}, "./", testNodeVersion)
+
+	if err != nil {
+		t.Errorf("expected no error, got: %s", err)
+	}
 }
 
 func ExampleStep_execDryRun() {
