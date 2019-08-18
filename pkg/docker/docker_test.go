@@ -1,11 +1,24 @@
 package docker
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/leopardslab/dunner/internal/settings"
 	"github.com/spf13/viper"
 )
+
+func TestExecWithInvalidImageName(t *testing.T) {
+	imageName := "^&^(^(*_invalid"
+	step := Step{Image: imageName}
+
+	err := step.Exec()
+
+	expectedErr := fmt.Sprintf("Failed to pull image %s: invalid reference format", imageName)
+	if err == nil || err.Error() != expectedErr {
+		t.Fatalf("expected error: %s, got: %s", expectedErr, err)
+	}
+}
 
 func ExampleStep_Exec() {
 	settings.Init()
@@ -26,8 +39,7 @@ func ExampleStep_Exec() {
 	// Output: OUT: v10.15.0
 }
 
-// WorkingDirAbs
-func ExampleStep() {
+func ExampleStep_workingDirAbs() {
 	var testNodeVersion = "10.15.0"
 	var absPath = "/go"
 	err := runCommand([]string{"pwd"}, absPath, testNodeVersion)
@@ -38,8 +50,7 @@ func ExampleStep() {
 	// Output: OUT: /go
 }
 
-// WorkingDirRel
-func Example() {
+func Example_workingDirRel() {
 	var testNodeVersion = "10.15.0"
 	var relPath = "./"
 	err := runCommand([]string{"pwd"}, relPath, testNodeVersion)
@@ -67,9 +78,24 @@ func runCommand(command []string, dir string, nodeVer string) error {
 func TestStep_execWithErr(t *testing.T) {
 	var testNodeVersion = "10.15.0"
 	var relPath = "./"
-	err := runCommand([]string{"ls", "/invalid_dir"}, relPath, testNodeVersion)
+	err := runCommand([]string{"ls", "/invalid_dir" +
+		""}, relPath, testNodeVersion)
+	if err == nil {
+		t.Fatalf("expected error, got none")
+	}
+	expectedErr := "Command execution failed with exit code 2"
+	if err.Error() != expectedErr {
+		t.Errorf("expected error: %s, got: %s", expectedErr, err.Error())
+	}
+}
+
+func TestStepExecSuccess(t *testing.T) {
+	var testNodeVersion = "10.15.0"
+
+	err := runCommand([]string{"node", "--version"}, "./", testNodeVersion)
+
 	if err != nil {
-		t.Fatal(err)
+		t.Errorf("expected no error, got: %s", err)
 	}
 }
 
