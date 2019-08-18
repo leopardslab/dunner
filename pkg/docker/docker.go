@@ -217,7 +217,7 @@ func (step Step) Exec() error {
 				fmt.Printf(`OUT: %s`, r.Output)
 			}
 			if r != nil && r.Error != "" {
-				fmt.Printf(`ERR: %s`, r.Error)
+				logger.ErrorOutput(`ERR: %s`, r.Error)
 			}
 		}
 		if err != nil {

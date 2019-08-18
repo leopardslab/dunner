@@ -3,7 +3,9 @@ package logger
 import (
 	"os"
 
+	"github.com/fatih/color"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 // Log is a globally configured logger
@@ -15,4 +17,16 @@ func init() {
 	Log.Formatter.(*logrus.TextFormatter).TimestampFormat = "2006-01-02 15:04:05" // Customize timestamp format
 	Log.Level = logrus.TraceLevel
 	Log.Out = os.Stdout
+}
+
+// InitColorOutput disables colorized output if no-color flag is passed
+func InitColorOutput() {
+	if viper.GetBool("No-color") {
+		color.NoColor = true
+	}
+}
+
+// ErrorOutput prints the given message in red color
+func ErrorOutput(format string, a ...interface{}) {
+	color.Red(format, a...)
 }

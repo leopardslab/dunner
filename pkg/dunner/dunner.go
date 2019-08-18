@@ -23,6 +23,8 @@ var log = logger.Log
 
 // Do method is invoked for command-line use
 func Do(_ *cobra.Command, args []string) {
+	logger.InitColorOutput()
+
 	var async = viper.GetBool("Async")
 
 	if verbose := viper.GetBool("Verbose"); async && verbose {
@@ -40,7 +42,7 @@ func Do(_ *cobra.Command, args []string) {
 	if len(errs) != 0 {
 		fmt.Println("Validation failed with following errors:")
 		for _, err := range errs {
-			fmt.Println(err.Error())
+			logger.ErrorOutput(err.Error())
 		}
 		os.Exit(1)
 	}

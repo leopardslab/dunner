@@ -18,6 +18,7 @@ func TestInit(t *testing.T) {
 		"verbose":          false,
 		"dry-run":          false,
 		"dockerapiversion": "1.39",
+		"no-color":         false,
 	}
 
 	if !reflect.DeepEqual(viper.AllSettings(), defaultSettings) {

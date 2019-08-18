@@ -75,19 +75,18 @@ func runCommand(command []string, dir string, nodeVer string) error {
 	return step.Exec()
 }
 
-func ExampleStep_execWithErr() {
+func TestStep_execWithErr(t *testing.T) {
 	var testNodeVersion = "10.15.0"
 	var relPath = "./"
 	err := runCommand([]string{"ls", "/invalid_dir" +
 		""}, relPath, testNodeVersion)
 	if err == nil {
-		panic(err)
+		t.Fatalf("expected error, got none")
 	}
 	expectedErr := "Command execution failed with exit code 2"
 	if err.Error() != expectedErr {
-		panic(fmt.Errorf("expected error: %s, got: %s", expectedErr, err.Error()))
+		t.Errorf("expected error: %s, got: %s", expectedErr, err.Error())
 	}
-	// Output: ERR: ls: cannot access '/invalid_dir': No such file or directory
 }
 
 func TestStepExecSuccess(t *testing.T) {
