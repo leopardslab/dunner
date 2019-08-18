@@ -209,10 +209,10 @@ func TestGetExecutableCommandForCommandsWithPath(t *testing.T) {
 	if cmd.Dir != wd {
 		t.Errorf("Command directory invalid")
 	}
-	if !logger1.equals(cmd.Stdout.(logger)) {
+	if !logger1.equals(cmd.Stdout.(testLogger)) {
 		t.Errorf("Logger1 invalid")
 	}
-	if !logger2.equals(cmd.Stderr.(logger)) {
+	if !logger2.equals(cmd.Stderr.(testLogger)) {
 		t.Errorf("Logger2 invalid")
 	}
 	if args["-v"] != true || args["-d"] != true {
@@ -220,19 +220,19 @@ func TestGetExecutableCommandForCommandsWithPath(t *testing.T) {
 	}
 }
 
-type logger struct {
+type testLogger struct {
 	name string
 }
 
-func (l logger) Write(b []byte) (n int, err error) {
+func (l testLogger) Write(b []byte) (n int, err error) {
 	return 1, nil
 }
 
-func createLogger(name string) logger {
-	return logger{name}
+func createLogger(name string) testLogger {
+	return testLogger{name}
 }
 
-func (l logger) equals(l1 logger) bool {
+func (l testLogger) equals(l1 testLogger) bool {
 	return l.name == l1.name
 }
 
