@@ -1,29 +1,44 @@
-build:
-  - image: node:10.15.0
-    commands:
-      - ["node", "--version"]
-      - ["npm", "--version"]
-  - image: alpine
-    dir: pkg
-    command: ["pwd"]
-  - image: alpine
-    commands:
-      - ["apk", "update"]
-  - image: alpine
-    commands:
-      - ["printenv"]
+envs:
+  - VAR1=VAL1
+  - GLB=VARBL
+mounts:
+  - ./pkg:/tmp:r
+tasks:
+  build:
     envs:
-      - PERM=775
-      - ID=dunner
-      - DIR=`$HOME`
-  - follow: 'show'
-    args:
-      - '/root'
-show:
-  - image: alpine
-    commands:
-      - ["ls", "$1"]
+      - VAR1=VAL11
+      - VAR2=VAL2
     mounts:
-      - '~/Downloads:/root/down'
-      - ~/Pictures:/root/pics:wr
-      - "~/Documents:/root/docs:r"
+      - ./pkg/dunner:/tmp:r
+    steps:
+      - image: node:10.15.0
+        commands:
+          - ["node", "--version"]
+          - ["npm", "--version"]
+      - image: alpine
+        dir: pkg
+        command: ["pwd"]
+      - image: alpine
+        commands:
+          - ["ls", "/tmp"]
+      - image: alpine
+        commands:
+          - ["printenv"]
+        envs:
+          - VAR2=VAL22
+          - PERM=775
+          - ID=dunner
+          - DIR=`$HOME`
+      - follow: 'show'
+        args:
+          - '/tmp'
+  show:
+    steps:
+      - image: alpine
+        commands:
+          - ["printenv"]
+          - ["ls", "$1"]
+        mounts:
+          - '~/Downloads:/root/down'
+          - ~/Pictures:/root/pics:wr
+          - "~/Documents:/root/docs:r"
