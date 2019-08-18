@@ -17,7 +17,7 @@ func TestExecWithInvalidImageName(t *testing.T) {
 
 	err := step.Exec()
 
-	expectedErr := fmt.Sprintf("Failed to pull image %s: invalid reference format", imageName)
+	expectedErr := fmt.Sprintf("docker: failed to pull image %s: invalid reference format", imageName)
 	if err == nil || err.Error() != expectedErr {
 		t.Fatalf("expected error: %s, got: %s", expectedErr, err)
 	}
@@ -86,7 +86,7 @@ func TestStep_execWithErr(t *testing.T) {
 	if err == nil {
 		t.Fatalf("expected error, got none")
 	}
-	expectedErr := "Command execution failed with exit code 2"
+	expectedErr := "docker: command execution failed with exit code 2"
 	if err.Error() != expectedErr {
 		t.Errorf("expected error: %s, got: %s", expectedErr, err.Error())
 	}

@@ -270,7 +270,7 @@ func runCmd(ctx context.Context, cli *client.Client, containerID string, command
 		log.Fatal(err)
 	}
 	if info.ExitCode != 0 {
-		return result, fmt.Errorf("`docker: command execution failed with exit code %d", info.ExitCode)
+		return result, fmt.Errorf("docker: command execution failed with exit code %d", info.ExitCode)
 	}
 
 	return result, nil
