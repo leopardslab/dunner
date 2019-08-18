@@ -25,15 +25,22 @@ func TestGetConfigs(t *testing.T) {
 	defer os.Setenv("MYDUNNER", "")
 
 	var content = []byte(`
-test:
-  - image: node:10.15.0
-    user: 20
-    commands:
-      - ["node", "--version"]
-      - ["npm", "--version"]
+envs:
+  - GLB=VARBL
+tasks:
+  test:
     envs:
-      - MYVAR=MYVAL
-      - MYUSR=` + "`$MYDUNNER`")
+      - GLB=VARBL2
+      - MYVAR=GLBVAL
+    steps:
+      - image: node:10.15.0
+        user: 20
+        commands:
+          - ["node", "--version"]
+          - ["npm", "--version"]
+        envs:
+          - MYVAR=MYVAL
+          - MYUSR=` + "`$MYDUNNER`")
 
 	tmpFile, err := ioutil.TempFile("", tmpFilename)
 	if err != nil {
@@ -55,16 +62,20 @@ test:
 		t.Fatal(err)
 	}
 
-	var task = Task{
+	var step = Step{
 		Name:     "",
 		Image:    "node:10.15.0",
 		Commands: [][]string{{"node", "--version"}, {"npm", "--version"}},
 		User:     "20",
 		Envs:     []string{"MYVAR=MYVAL", "MYUSR=dunner"},
 	}
-	var tasks = make(map[string][]Task)
-	tasks["test"] = []Task{task}
+	var tasks = make(map[string]Task)
+	tasks["test"] = Task{
+		Envs:  []string{"GLB=VARBL2", "MYVAR=GLBVAL"},
+		Steps: []Step{step},
+	}
 	var expected = Configs{
+		Envs:  []string{"GLB=VARBL"},
 		Tasks: tasks,
 	}
 
@@ -75,30 +86,34 @@ test:
 }
 
 func TestParseEnv_InvalidEnv(t *testing.T) {
-	tasks := make(map[string][]Task, 0)
-	task := getSampleTask()
-	task.Image = "node:10.15.0"
-	task.Envs = []string{"MYVAR=MYVAL", "MYUSR=dunner=invalid"}
-	tasks["test"] = []Task{task}
-	configs := &Configs{Tasks: tasks}
+	step := getSampleStep()
+	step.Image = "node:10.15.0"
+	step.Envs = []string{"MYVAR=MYVAL", "MYUSR=dunner=invalid"}
+	var tasks = make(map[string]Task)
+	tasks["test"] = Task{Steps: []Step{step}}
+	var configs = &Configs{
+		Tasks: tasks,
+	}
 
 	expectedErr := fmt.Errorf(
 		`config: invalid format of environment variable: %s`,
 		"MYUSR=dunner=invalid",
 	)
 
-	if err := ParseEnv(configs); err.Error() != expectedErr.Error() {
+	if err := ParseEnvs(configs); err.Error() != expectedErr.Error() {
 		t.Fatalf("Did not receive proper error on invalid format of environment variable, %v != %v", err, expectedErr)
 	}
 }
 
 func TestParseEnv_EnvNotExist(t *testing.T) {
-	tasks := make(map[string][]Task, 0)
-	task := getSampleTask()
-	task.Image = "node:10.15.0"
-	task.Envs = []string{"MYVAR=MYVAL", "MYUSR=`$MYDUNNER`"}
-	tasks["test"] = []Task{task}
-	configs := &Configs{Tasks: tasks}
+	step := getSampleStep()
+	step.Image = "node:10.15.0"
+	step.Envs = []string{"MYVAR=MYVAL", "MYUSR=`$MYDUNNER`"}
+	var tasks = make(map[string]Task)
+	tasks["test"] = Task{Steps: []Step{step}}
+	var configs = &Configs{
+		Tasks: tasks,
+	}
 
 	expectedErr := fmt.Errorf(
 		`config: could not find environment variable '%v' in %s file or among host environment variables`,
@@ -106,15 +121,17 @@ func TestParseEnv_EnvNotExist(t *testing.T) {
 		viper.GetString("DotenvFile"),
 	)
 
-	if err := ParseEnv(configs); err.Error() != expectedErr.Error() {
+	if err := ParseEnvs(configs); err.Error() != expectedErr.Error() {
 		t.Fatalf("Did not receive proper error on invalid format of environment variable, %v != %v", err, expectedErr)
 	}
 }
 
 func TestConfigs_Validate(t *testing.T) {
-	tasks := make(map[string][]Task, 0)
-	tasks["stats"] = []Task{getSampleTask()}
-	configs := &Configs{Tasks: tasks}
+	var tasks = make(map[string]Task)
+	tasks["test"] = Task{Steps: []Step{getSampleStep()}}
+	var configs = &Configs{
+		Tasks: tasks,
+	}
 
 	errs := configs.Validate()
 
@@ -124,7 +141,7 @@ func TestConfigs_Validate(t *testing.T) {
 }
 
 func TestConfigs_ValidateWithNoTasks(t *testing.T) {
-	tasks := make(map[string][]Task, 0)
+	tasks := make(map[string]Task, 0)
 	configs := &Configs{Tasks: tasks}
 
 	errs := configs.Validate()
@@ -135,9 +152,9 @@ func TestConfigs_ValidateWithNoTasks(t *testing.T) {
 }
 
 func TestConfigs_ValidateWithEmptyImageAndCommand(t *testing.T) {
-	tasks := make(map[string][]Task, 0)
-	task := Task{Image: "", Command: []string{""}}
-	tasks["stats"] = []Task{task}
+	tasks := make(map[string]Task, 0)
+	step := Step{Image: "", Command: []string{""}}
+	tasks["stats"] = Task{Steps: []Step{step}}
 	configs := &Configs{Tasks: tasks}
 
 	errs := configs.Validate()
@@ -157,9 +174,9 @@ func TestConfigs_ValidateWithEmptyImageAndCommand(t *testing.T) {
 }
 
 func TestConfigs_ValidateForAliasTask(t *testing.T) {
-	tasks := make(map[string][]Task, 0)
-	tasks["foo"] = []Task{Task{Image: "golang", Command: []string{"go", "version"}}}
-	tasks["stats"] = []Task{Task{Follow: "foo"}}
+	tasks := make(map[string]Task, 0)
+	tasks["foo"] = Task{Steps: []Step{{Image: "golang", Command: []string{"go", "version"}}}}
+	tasks["stats"] = Task{Steps: []Step{{Follow: "foo"}}}
 	configs := &Configs{Tasks: tasks}
 
 	errs := configs.Validate()
@@ -170,11 +187,13 @@ func TestConfigs_ValidateForAliasTask(t *testing.T) {
 }
 
 func TestConfigs_ValidateWithInvalidMountFormat(t *testing.T) {
-	tasks := make(map[string][]Task, 0)
-	task := getSampleTask()
-	task.Mounts = []string{"invalid_dir"}
-	tasks["stats"] = []Task{task}
-	configs := &Configs{Tasks: tasks}
+	step := getSampleStep()
+	step.Mounts = []string{"invalid_dir"}
+	var tasks = make(map[string]Task)
+	tasks["stats"] = Task{Steps: []Step{step}}
+	var configs = &Configs{
+		Tasks: tasks,
+	}
 
 	errs := configs.Validate()
 
@@ -189,12 +208,14 @@ func TestConfigs_ValidateWithInvalidMountFormat(t *testing.T) {
 }
 
 func TestConfigs_ValidateWithValidMountDirectory(t *testing.T) {
-	tasks := make(map[string][]Task, 0)
-	task := getSampleTask()
+	step := getSampleStep()
 	wd, _ := os.Getwd()
-	task.Mounts = []string{fmt.Sprintf("%s:%s:w", wd, wd)}
-	tasks["stats"] = []Task{task}
-	configs := &Configs{Tasks: tasks}
+	step.Mounts = []string{fmt.Sprintf("%s:%s:w", wd, wd)}
+	var tasks = make(map[string]Task)
+	tasks["stats"] = Task{Steps: []Step{step}}
+	var configs = &Configs{
+		Tasks: tasks,
+	}
 
 	errs := configs.Validate()
 
@@ -204,12 +225,14 @@ func TestConfigs_ValidateWithValidMountDirectory(t *testing.T) {
 }
 
 func TestConfigs_ValidateWithMountDirFromEnv(t *testing.T) {
-	tasks := make(map[string][]Task, 0)
-	task := getSampleTask()
+	step := getSampleStep()
 	wd, _ := os.Getwd()
-	task.Mounts = []string{fmt.Sprintf("%s:%s:w", wd, wd)}
-	tasks["stats"] = []Task{task}
-	configs := &Configs{Tasks: tasks}
+	step.Mounts = []string{fmt.Sprintf("%s:%s:w", wd, wd)}
+	var tasks = make(map[string]Task)
+	tasks["stats"] = Task{Steps: []Step{step}}
+	var configs = &Configs{
+		Tasks: tasks,
+	}
 
 	errs := configs.Validate()
 
@@ -219,12 +242,14 @@ func TestConfigs_ValidateWithMountDirFromEnv(t *testing.T) {
 }
 
 func TestConfigs_ValidateWithNoModeGiven(t *testing.T) {
-	tasks := make(map[string][]Task, 0)
-	task := getSampleTask()
+	step := getSampleStep()
 	wd, _ := os.Getwd()
-	task.Mounts = []string{fmt.Sprintf("%s:%s", wd, wd)}
-	tasks["stats"] = []Task{task}
-	configs := &Configs{Tasks: tasks}
+	step.Mounts = []string{fmt.Sprintf("%s:%s", wd, wd)}
+	var tasks = make(map[string]Task)
+	tasks["stats"] = Task{Steps: []Step{step}}
+	var configs = &Configs{
+		Tasks: tasks,
+	}
 
 	errs := configs.Validate()
 
@@ -234,27 +259,31 @@ func TestConfigs_ValidateWithNoModeGiven(t *testing.T) {
 }
 
 func TestConfigs_ValidateWithInvalidMode(t *testing.T) {
-	tasks := make(map[string][]Task, 0)
-	task := getSampleTask()
+	step := getSampleStep()
 	wd, _ := os.Getwd()
-	task.Mounts = []string{fmt.Sprintf("%s:%s:ab", wd, wd)}
-	tasks["stats"] = []Task{task}
-	configs := &Configs{Tasks: tasks}
+	step.Mounts = []string{fmt.Sprintf("%s:%s:ab", wd, wd)}
+	var tasks = make(map[string]Task)
+	tasks["stats"] = Task{Steps: []Step{step}}
+	var configs = &Configs{
+		Tasks: tasks,
+	}
 
 	errs := configs.Validate()
 
-	expected := fmt.Sprintf("task 'stats': mount directory '%s' is invalid. Check format is '<valid_src_dir>:<valid_dest_dir>:<optional_mode>' and has right permission level", task.Mounts[0])
+	expected := fmt.Sprintf("task 'stats': mount directory '%s' is invalid. Check format is '<valid_src_dir>:<valid_dest_dir>:<optional_mode>' and has right permission level", step.Mounts[0])
 	if errs[0].Error() != expected {
 		t.Fatalf("expected: %s, got: %s", expected, errs[0].Error())
 	}
 }
 
 func TestConfigs_ValidateWithInvalidMountDirectory(t *testing.T) {
-	tasks := make(map[string][]Task, 0)
-	task := getSampleTask()
-	task.Mounts = []string{"blah:foo:w"}
-	tasks["stats"] = []Task{task}
-	configs := &Configs{Tasks: tasks}
+	step := getSampleStep()
+	step.Mounts = []string{"blah:foo:w"}
+	var tasks = make(map[string]Task)
+	tasks["stats"] = Task{Steps: []Step{step}}
+	var configs = &Configs{
+		Tasks: tasks,
+	}
 
 	errs := configs.Validate()
 
@@ -271,11 +300,13 @@ func TestConfigs_ValidateWithInvalidMountDirectory(t *testing.T) {
 func TestConfigs_ValidateWithValidEnvInMountDir(t *testing.T) {
 	os.Setenv("TEST_DIR", util.HomeDir)
 	defer os.Setenv("TEST_DIR", "")
-	tasks := make(map[string][]Task, 0)
-	task := getSampleTask()
-	task.Mounts = []string{"`$TEST_DIR`:foo:w"}
-	tasks["stats"] = []Task{task}
-	configs := &Configs{Tasks: tasks}
+	step := getSampleStep()
+	step.Mounts = []string{"`$TEST_DIR`:foo:w"}
+	var tasks = make(map[string]Task)
+	tasks["stats"] = Task{Steps: []Step{step}}
+	var configs = &Configs{
+		Tasks: tasks,
+	}
 
 	errs := configs.Validate()
 
@@ -287,11 +318,13 @@ func TestConfigs_ValidateWithValidEnvInMountDir(t *testing.T) {
 func TestConfigs_ValidateWithEnvInMountDir_Invalid(t *testing.T) {
 	os.Setenv("TEST_DIR", "/test_invalid")
 	defer os.Setenv("TEST_DIR", "")
-	tasks := make(map[string][]Task, 0)
-	task := getSampleTask()
-	task.Mounts = []string{"`$TEST_DIR`:foo:w"}
-	tasks["stats"] = []Task{task}
-	configs := &Configs{Tasks: tasks}
+	step := getSampleStep()
+	step.Mounts = []string{"`$TEST_DIR`:foo:w"}
+	var tasks = make(map[string]Task)
+	tasks["stats"] = Task{Steps: []Step{step}}
+	var configs = &Configs{
+		Tasks: tasks,
+	}
 
 	errs := configs.Validate()
 
@@ -306,11 +339,13 @@ func TestConfigs_ValidateWithEnvInMountDir_Invalid(t *testing.T) {
 }
 
 func TestConfigs_ValidateWithNonExistingEnvInMountDir(t *testing.T) {
-	tasks := make(map[string][]Task, 0)
-	task := getSampleTask()
-	task.Mounts = []string{"`$TEST_DIR_DUNNER`:foo:w"}
-	tasks["stats"] = []Task{task}
-	configs := &Configs{Tasks: tasks}
+	step := getSampleStep()
+	step.Mounts = []string{"`$TEST_DIR_DUNNER`:foo:w"}
+	var tasks = make(map[string]Task)
+	tasks["stats"] = Task{Steps: []Step{step}}
+	var configs = &Configs{
+		Tasks: tasks,
+	}
 
 	errs := configs.Validate()
 
@@ -324,8 +359,8 @@ func TestConfigs_ValidateWithNonExistingEnvInMountDir(t *testing.T) {
 	}
 }
 
-func getSampleTask() Task {
-	return Task{Image: "image_name", Command: []string{"node", "--version"}}
+func getSampleStep() Step {
+	return Step{Image: "image_name", Command: []string{"node", "--version"}}
 }
 
 func TestInitValidatorForNilTranslation(t *testing.T) {

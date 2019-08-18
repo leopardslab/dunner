@@ -17,7 +17,7 @@ You can use the library by creating a dunner task file. For example,
 		commands:
 		  - ["npm", "install"]
 	  - image: mvn
-		commands:@agentmilindu
+		commands:
 		  - ["mvn", "package"]
 
 Use `GetConfigs` method to parse the dunner task file, and `ParseEnvs` method to parse environment variables file, or
@@ -103,10 +103,12 @@ func (configs *Configs) Validate() []error {
 	errs := formatErrors(valErrs, "")
 	ctx := context.WithValue(context.Background(), configsKey, configs)
 
-	// Each task is validated separately so that task name can be added in error messages
-	for taskName, tasks := range configs.Tasks {
-		taskValErrs := govalidator.VarCtx(ctx, tasks, "dive")
-		errs = append(errs, formatErrors(taskValErrs, taskName)...)
+	// Each step is validated separately so that task name can be added in error messages
+	for taskName, task := range configs.Tasks {
+		for _, steps := range task.Steps {
+			taskValErrs := govalidator.VarCtx(ctx, steps, "dive")
+			errs = append(errs, formatErrors(taskValErrs, taskName)...)
+		}
 	}
 	return errs
 }

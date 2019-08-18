@@ -164,9 +164,9 @@ func PassArgs(s *docker.Step, args *[]string) error {
 
 // getDunnerUser returns the user value from step, if empty returns first found value in order:
 // UID env variable, current user ID, current user name.
-func getDunnerUser(task config.Step) string {
-	if task.User != "" {
-		return task.User
+func getDunnerUser(step config.Step) string {
+	if step.User != "" {
+		return step.User
 	}
 	dunnerUser := os.Getenv("UID")
 	if dunnerUser == "" {

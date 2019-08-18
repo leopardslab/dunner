@@ -15,12 +15,19 @@ import (
 func TestDo(t *testing.T) {
 
 	var content = []byte(`
-test:
-  - image: busybox
-    user: 20
-    command: ["ls", "$1"]
+envs:
+  - GLB=VARBL
+tasks:
+  test:
     envs:
-      - MYVAR=MYVAL`)
+      - GLB=VARBL2
+      - MYVAR=GLBVAL
+    steps:
+      - image: busybox
+        user: 20
+        command: ["ls", "$1"]
+        envs:
+          - MYVAR=MYVAL`)
 
 	if err := doContent(&content); err != nil {
 		t.Fatal(err)
@@ -42,16 +49,25 @@ func TestDo_VerboseAsync(t *testing.T) {
 func TestDo_WithFollow(t *testing.T) {
 
 	var content = []byte(`
-test:
-  - image: busybox
-    user: 20
-    command: ["ls", "$1"]
+envs:
+  - GLB=VARBL
+tasks:
+  test:
     envs:
-      - MYVAR=MYVAL
-  - follow: test2
-test2:
-  - image: busybox
-    command: ["pwd"]`)
+      - GLB=VARBL2
+      - MYVAR=GLBVAL
+    steps:
+      - image: busybox
+        user: 20
+        commands:
+          - ["ls", "$1"]
+        envs:
+          - MYVAR=MYVAL
+      - follow: test2
+  test2:
+    steps:
+      - image: busybox
+        command: ["pwd"]`)
 
 	if err := doContent(&content); err != nil {
 		t.Fatal(err)
@@ -85,14 +101,14 @@ func doContent(content *[]byte) error {
 }
 
 func TestExecTask(t *testing.T) {
-	var task = config.Task{
+	var step = config.Step{
 		Name:     "",
 		Image:    "busybox",
 		Commands: [][]string{{"ls", "/"}, {"ls", "$1"}},
 		Envs:     []string{"MYVAR=MYVAL"},
 	}
-	var tasks = make(map[string][]config.Task)
-	tasks["test"] = []config.Task{task}
+	var tasks = make(map[string]config.Task)
+	tasks["test"] = config.Task{Steps: []config.Step{step}}
 	var configs = config.Configs{
 		Tasks: tasks,
 	}
@@ -112,9 +128,9 @@ func TestExecTaskAsync(t *testing.T) {
 
 func TestGetDunnerUserFromStep(t *testing.T) {
 	expected := "test_user"
-	task := config.Task{User: expected}
+	step := config.Step{User: expected}
 
-	user := getDunnerUser(task)
+	user := getDunnerUser(step)
 
 	if user != expected {
 		t.Errorf("got: %s, want: %s", user, expected)
@@ -125,7 +141,7 @@ func TestGetDunnerUserFromUserEnv(t *testing.T) {
 	user, _ := os_user.Current()
 	want := user.Uid
 
-	got := getDunnerUser(config.Task{})
+	got := getDunnerUser(config.Step{})
 
 	if got != want {
 		t.Errorf("got: %s, want: %s", user, want)
