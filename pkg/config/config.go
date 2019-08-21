@@ -52,6 +52,8 @@ import (
 
 var log = logger.Log
 var dotEnv map[string]string
+var hostDirpattern = "`\\$(?P<name>[^`]+)`"
+var hostDirRegex = regexp.MustCompile(hostDirpattern)
 
 var (
 	uni                     *ut.UniversalTranslator
@@ -372,6 +374,16 @@ func obtainEnv(envVar string) (string, error) {
 	return envVar, nil
 }
 
+// ParseStepEnv parses Dir field of step and replaces environment variable with their values
+func (step *Step) ParseStepEnv() error {
+	parsedDir, err := lookupDirectory(step.Dir)
+	if err != nil {
+		return err
+	}
+	step.Dir = parsedDir
+	return nil
+}
+
 // DecodeMount parses mount format for directories to be mounted as bind volumes.
 // The format to configure a mount is
 // 		<source>:<destination>:<mode>
@@ -413,8 +425,6 @@ func DecodeMount(mounts []string, step *docker.Step) error {
 
 // Replaces dir having any environment variables in form `$ENV_NAME` and returns a parsed string
 func lookupDirectory(dir string) (string, error) {
-	hostDirpattern := "`\\$(?P<name>[^`]+)`"
-	hostDirRegex := regexp.MustCompile(hostDirpattern)
 	matches := hostDirRegex.FindAllStringSubmatch(dir, -1)
 
 	parsedDir := dir
@@ -428,7 +438,7 @@ func lookupDirectory(dir string) (string, error) {
 			val = v
 		}
 		if val == "" {
-			return dir, fmt.Errorf(`could not find environment variable '%v'`, envKey)
+			return dir, fmt.Errorf("could not find environment variable '%v'", envKey)
 		}
 		parsedDir = strings.Replace(parsedDir, fmt.Sprintf("`$%s`", envKey), val, -1)
 	}

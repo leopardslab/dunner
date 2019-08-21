@@ -71,7 +71,7 @@ func ExecTask(configs *config.Configs, taskName string, args []string) error {
 			Command:  stepDefinition.Command,
 			Commands: stepDefinition.Commands,
 			Env:      stepDefinition.Envs,
-			WorkDir:  stepDefinition.SubDir,
+			WorkDir:  stepDefinition.Dir,
 			Follow:   stepDefinition.Follow,
 			Args:     stepDefinition.Args,
 			User:     getDunnerUser(stepDefinition),

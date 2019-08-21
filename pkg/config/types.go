@@ -8,8 +8,8 @@ type Step struct {
 	// Image is the repo name on which Docker containers are built
 	Image string `yaml:"image" validate:"required_without=Follow"`
 
-	// SubDir is the primary directory on which task is to be run
-	SubDir string `yaml:"dir"`
+	// Dir is the primary directory on which task is to be run
+	Dir string `yaml:"dir"`
 
 	// The command which runs on the container and exits
 	Command []string `yaml:"command" validate:"omitempty,dive,required"`

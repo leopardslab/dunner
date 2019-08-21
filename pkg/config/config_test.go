@@ -526,3 +526,43 @@ func setup(t *testing.T) func() {
 		}
 	}
 }
+
+func TestParseStepEnvToReplaceDirSuccess(t *testing.T) {
+	mainDir := "MY_ENVNAME"
+	os.Setenv(mainDir, "foobar")
+	subDir := "SUBDIR"
+	os.Setenv(subDir, "dunner")
+	defer os.Unsetenv(mainDir)
+	defer os.Unsetenv(subDir)
+	step := &Step{Image: "node", Dir: fmt.Sprintf("/tmp/`$%s`/`$%s`", mainDir, subDir)}
+
+	err := step.ParseStepEnv()
+
+	if err != nil {
+		t.Fatalf("expected no error, got %s", err)
+	}
+	expected := "/tmp/foobar/dunner"
+	if step.Dir != expected {
+		t.Errorf("expected step dir: %s, got: %s", expected, step.Dir)
+	}
+}
+
+func TestParseStepEnvToReplaceDirFailure(t *testing.T) {
+	env := "MY_UNSET_ENV"
+	sErr := os.Unsetenv(env)
+	if sErr != nil {
+		t.Fatalf("failed to setup test environment: %s", sErr)
+	}
+	dir := "/tmp/`$MY_UNSET_ENV`"
+	step := &Step{Image: "node", Dir: dir}
+
+	err := step.ParseStepEnv()
+
+	expectedErr := "could not find environment variable 'MY_UNSET_ENV'"
+	if err == nil || err.Error() != expectedErr {
+		t.Fatalf("expected error %s, got %s", expectedErr, err)
+	}
+	if step.Dir != dir {
+		t.Errorf("expected step dir: %s, got: %s", dir, step.Dir)
+	}
+}
