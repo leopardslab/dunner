@@ -37,6 +37,7 @@ build:
 
 	tmpFile := createDunnerTaskFile(t, content, tmpFilename)
 	defer os.Remove(tmpFile.Name())
+	defer viper.Reset()
 
 	err := ListTasks()
 
@@ -65,6 +66,7 @@ build:
 
 	tmpFile := createDunnerTaskFile(t, content, tmpFilename)
 	defer os.Remove(tmpFile.Name())
+	defer viper.Reset()
 
 	err := ListTasks()
 
@@ -73,12 +75,48 @@ build:
 	}
 }
 
+func ExampleListTasks_successWithAllTasksAsBullets() {
+	var tmpFilename = ".testdunner.yaml"
+	var content = []byte(`
+setup:
+  - image: node
+    command: []
+build:
+  - image: node
+    command: []`)
+
+	tmpFile, err := ioutil.TempFile("", tmpFilename)
+	if err != nil {
+		panic(err)
+	}
+
+	if _, err := tmpFile.Write(content); err != nil {
+		panic(err)
+	}
+
+	if err := tmpFile.Close(); err != nil {
+		panic(err)
+	}
+
+	viper.Set("DunnerTaskFile", tmpFile.Name())
+	defer viper.Reset()
+	defer os.Remove(tmpFile.Name())
+
+	ListTasks()
+
+	// Output: Available Dunner tasks:
+	// • setup
+	// • build
+	// Run `dunner do <task_name>` to run a dunner task.
+}
+
 func Test_ListTasksSuccessNoTasks(t *testing.T) {
 	var tmpFilename = ".testdunner.yaml"
 	var content = []byte("")
 
 	tmpFile := createDunnerTaskFile(t, content, tmpFilename)
 	defer os.Remove(tmpFile.Name())
+	defer viper.Reset()
 
 	err := ListTasks()
 
