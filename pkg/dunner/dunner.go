@@ -63,7 +63,7 @@ func ExecTask(configs *config.Configs, taskName string, args []string) error {
 	for _, stepDefinition := range configs.Tasks[taskName].Steps {
 		err := stepDefinition.ParseStepEnv()
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 		if async {
 			wg.Add(1)
