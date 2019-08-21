@@ -61,6 +61,10 @@ func ExecTask(configs *config.Configs, taskName string, args []string) error {
 		return fmt.Errorf("dunner: task '%s' does not exist", taskName)
 	}
 	for _, stepDefinition := range configs.Tasks[taskName].Steps {
+		err := stepDefinition.ParseStepEnv()
+		if err != nil {
+			log.Fatal(err)
+		}
 		if async {
 			wg.Add(1)
 		}

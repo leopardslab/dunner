@@ -374,13 +374,27 @@ func obtainEnv(envVar string) (string, error) {
 	return envVar, nil
 }
 
-// ParseStepEnv parses Dir field of step and replaces environment variable with their values
+// ParseStepEnv parses Dir, Mounts, User fields of Step by replacing environment variables with their values
 func (step *Step) ParseStepEnv() error {
 	parsedDir, err := lookupDirectory(step.Dir)
 	if err != nil {
 		return err
 	}
 	step.Dir = parsedDir
+
+	for index, m := range step.Mounts {
+		parsedMount, err := lookupDirectory(m)
+		if err != nil {
+			return err
+		}
+		step.Mounts[index] = parsedMount
+	}
+
+	parsedUser, err := lookupDirectory(step.User)
+	if err != nil {
+		return err
+	}
+	step.User = parsedUser
 	return nil
 }
 
@@ -400,15 +414,7 @@ func DecodeMount(mounts []string, step *docker.Step) error {
 				readOnly = false
 			}
 		}
-		parsedSrcDir, err := lookupDirectory(arr[0])
-		if err != nil {
-			return err
-		}
-		parsedDestDir, err := lookupDirectory(arr[1])
-		if err != nil {
-			return err
-		}
-		src, err := filepath.Abs(joinPathRelToHome(parsedSrcDir))
+		src, err := filepath.Abs(joinPathRelToHome(arr[0]))
 		if err != nil {
 			return err
 		}
@@ -416,7 +422,7 @@ func DecodeMount(mounts []string, step *docker.Step) error {
 		(*step).ExtMounts = append((*step).ExtMounts, mount.Mount{
 			Type:     mount.TypeBind,
 			Source:   src,
-			Target:   parsedDestDir,
+			Target:   arr[1],
 			ReadOnly: readOnly,
 		})
 	}
