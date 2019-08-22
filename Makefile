@@ -11,6 +11,8 @@ endif
 #Hooks
 PRECOMMIT_HOOK="./resources/git-hooks/pre-commit"
 
+TEST_IMAGE_DIR="./resources/test-image/"
+
 #Go parameters
 GOCMD=go
 GOINSTALL=$(GOCMD) install
@@ -32,10 +34,10 @@ install:
 build: install
 	@$(GOINSTALL) -ldflags "-X main.version=$(VERSION)-$(SHA) -s"
 
-ci: build fmt lint vet
+ci: build fmt lint vet test-setup
 	@go test -v $(ALL_PACKAGES) -race -coverprofile=coverage.txt -covermode=atomic
 
-test: build
+test: build test-setup
 	@go test -v $(ALL_PACKAGES)
 
 vet:
@@ -48,6 +50,9 @@ lint:
 	@golint -set_exit_status $(ALL_PACKAGES)
 
 precommit: build test fmt lint vet
+
+test-setup:
+	@docker build --no-cache --tag 'dunner/test-image' $(TEST_IMAGE_DIR)
 
 test-coverage:
 	@echo "mode: count" > coverage-all.out
