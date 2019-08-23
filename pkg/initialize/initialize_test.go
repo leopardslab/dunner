@@ -55,7 +55,7 @@ func TestInitProjectSuccess(t *testing.T) {
 	}
 
 	var configs config.Configs
-	if err := yaml.Unmarshal(fileContents, &configs.Tasks); err != nil {
+	if err := yaml.Unmarshal(fileContents, &configs); err != nil {
 		t.Errorf("Task file config structure invalid: %s", err.Error())
 	}
 }

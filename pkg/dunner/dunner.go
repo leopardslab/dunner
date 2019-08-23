@@ -60,7 +60,7 @@ func ExecTask(configs *config.Configs, taskName string, args []string) error {
 	if _, exists := configs.Tasks[taskName]; !exists {
 		return fmt.Errorf("dunner: task '%s' does not exist", taskName)
 	}
-	for _, stepDefinition := range configs.Tasks[taskName] {
+	for _, stepDefinition := range configs.Tasks[taskName].Steps {
 		if async {
 			wg.Add(1)
 		}
@@ -77,7 +77,7 @@ func ExecTask(configs *config.Configs, taskName string, args []string) error {
 			User:     getDunnerUser(stepDefinition),
 		}
 
-		if err := config.DecodeMount(stepDefinition.Mounts, &step); err != nil {
+		if err := PassGlobals(&step, configs, &stepDefinition); err != nil {
 			log.Fatal(err)
 		}
 
@@ -164,9 +164,9 @@ func PassArgs(s *docker.Step, args *[]string) error {
 
 // getDunnerUser returns the user value from step, if empty returns first found value in order:
 // UID env variable, current user ID, current user name.
-func getDunnerUser(task config.Task) string {
-	if task.User != "" {
-		return task.User
+func getDunnerUser(step config.Step) string {
+	if step.User != "" {
+		return step.User
 	}
 	dunnerUser := os.Getenv("UID")
 	if dunnerUser == "" {
@@ -179,4 +179,74 @@ func getDunnerUser(task config.Task) string {
 		}
 	}
 	return dunnerUser
+}
+
+// PassGlobals uses passes the environment variables and directory mounts that
+// are present in the upper scopes in dunner file.
+//
+// In the case of environment variables, if a different value of variable is given
+// in a lower scope as compared to an upper scope, the value from the upper scope
+// is overridden by the lower scope variable definition.
+// While in the case of directory mounts, similar comparision is done when two mounts
+// from different scopes have
+// the same destination (target) path.
+//
+// Since both of these parings are independent of each other, they are carried out
+// concurrently on two different goroutines to increase the execution speed.
+func PassGlobals(step *docker.Step, configs *config.Configs, stepDefinition *config.Step) error {
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	// Parsing environment variable. Environment variable are overridden if
+	// same key is present in the lower scopes.
+	go func() {
+		envKeys := make(map[string]struct{})
+		for _, env := range (*step).Env {
+			envKeys[strings.Split(env, "=")[0]] = struct{}{}
+		}
+		for _, env := range (*configs).Tasks[step.Task].Envs {
+			k := strings.Split(env, "=")[0]
+			if _, present := envKeys[k]; !present {
+				step.Env = append(step.Env, env)
+				envKeys[k] = struct{}{}
+			}
+		}
+		for _, env := range (*configs).Envs {
+			k := strings.Split(env, "=")[0]
+			if _, present := envKeys[k]; !present {
+				step.Env = append(step.Env, env)
+			}
+		}
+		wg.Done()
+	}()
+
+	// Parsing of directory mounts. Mounts are overridden if same destination is
+	// present in the lower scopes.
+	go func() {
+		targets := make(map[string]struct{})
+		allMounts := (*stepDefinition).Mounts
+		for _, mount := range (*stepDefinition).Mounts {
+			targets[strings.Split(mount, ":")[1]] = struct{}{}
+		}
+		for _, mount := range (*configs).Tasks[step.Task].Mounts {
+			k := strings.Split(mount, ":")[1]
+			if _, present := targets[k]; !present {
+				allMounts = append(allMounts, mount)
+				targets[k] = struct{}{}
+			}
+		}
+		for _, mount := range (*configs).Mounts {
+			k := strings.Split(mount, ":")[1]
+			if _, present := targets[k]; !present {
+				allMounts = append(allMounts, mount)
+			}
+		}
+		if err := config.DecodeMount(allMounts, step); err != nil {
+			log.Fatal(err)
+		}
+		wg.Done()
+	}()
+
+	wg.Wait()
+	return nil
 }

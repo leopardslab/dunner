@@ -25,15 +25,20 @@ func Test_ListTasksWhenConfigFileNotFound(t *testing.T) {
 func Test_ListTasksWhenValidationFails(t *testing.T) {
 	var tmpFilename = ".testdunner.yaml"
 	var content = []byte(`
-setup:
-  - image: node
-    commands:
-      - ["node", "--version"]
-      - ["npm", "--version"]
-    envs:
-      - MYVAR=MYVAL
-build:
-  - command: []`)
+envs:
+  - GLB=VARBL
+tasks:
+  setup:
+    steps:
+      - image: node
+        commands:
+          - ["node", "--version"]
+          - ["npm", "--version"]
+        envs:
+          - MYVAR=MYVAL
+  build:
+    steps:
+      - command: []`)
 
 	tmpFile := createDunnerTaskFile(t, content, tmpFilename)
 	defer os.Remove(tmpFile.Name())
@@ -52,16 +57,21 @@ build:
 func Test_ListTasksSuccess(t *testing.T) {
 	var tmpFilename = ".testdunner.yaml"
 	var content = []byte(`
-setup:
-  - image: node
-    commands:
-      - ["node", "--version"]
-      - ["npm", "--version"]
-    envs:
-      - MYVAR=MYVAL
-build:
-  - image: node
-    command: []`)
+envs:
+  - GLB=VARBL
+tasks:
+  setup:
+    steps:
+      - image: node
+        commands:
+          - ["node", "--version"]
+          - ["npm", "--version"]
+        envs:
+          - MYVAR=MYVAL
+  build:
+    steps:
+      - image: node
+        command: ["ls"]`)
 
 	tmpFile := createDunnerTaskFile(t, content, tmpFilename)
 	defer os.Remove(tmpFile.Name())
