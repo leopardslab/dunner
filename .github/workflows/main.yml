@@ -14,4 +14,4 @@ jobs:
         sudo apt install bash
         curl https://installer.to/dunner | bash
         dunner version
-        dunner do build
+        dunner do show
