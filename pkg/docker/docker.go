@@ -173,6 +173,13 @@ func (step Step) Exec() error {
 		}
 	}
 
+	defer func(containerID string) {
+		if err := cli.ContainerRemove(ctx, containerID, types.ContainerRemoveOptions{}); err != nil {
+			log.Fatal(err)
+		}
+
+	}(resp.ID)
+
 	if err = cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
 		log.Fatal(err)
 	}
