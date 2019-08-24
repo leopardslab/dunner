@@ -64,15 +64,21 @@ PASS=true
 for file in $gofiles
 do
   goimports -w $file
+  code=$(echo $?)
+  if [ $code != 0 ]; then
+    PASS=false
+  fi
 
-  golint "-set_exit_status" $file
-  if [ "$?" = 1 ]; then
+  make lint GO_FILES=$file
+  code=$(echo $?)
+  if [ $code != 0 ]; then
     PASS=false
   fi
 done
 
-go vet ./...
-if [ "$?" != 0 ]; then
+make vet
+code=$(echo $?)
+if [ $code != 0 ]; then
   PASS=false
 fi
 
