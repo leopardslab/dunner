@@ -10,6 +10,7 @@ import (
 
 func Test_ListTasksWhenConfigFileNotFound(t *testing.T) {
 	viper.Set("DunnerTaskFile", "fileThatDoesnotExit.yaml")
+	defer viper.Reset()
 
 	err := ListTasks()
 
@@ -88,12 +89,15 @@ tasks:
 func ExampleListTasks_successWithAllTasksAsBullets() {
 	var tmpFilename = ".testdunner.yaml"
 	var content = []byte(`
-setup:
-  - image: node
-    command: []
-build:
-  - image: node
-    command: []`)
+tasks:
+  setup:
+    steps:
+      - image: node
+        command: []
+  build:
+    steps:
+      - image: node
+        command: []`)
 
 	tmpFile, err := ioutil.TempFile("", tmpFilename)
 	if err != nil {
@@ -112,7 +116,11 @@ build:
 	defer viper.Reset()
 	defer os.Remove(tmpFile.Name())
 
-	ListTasks()
+	err = ListTasks()
+
+	if err != nil {
+		panic(err)
+	}
 
 	// Output: Available Dunner tasks:
 	// • setup
