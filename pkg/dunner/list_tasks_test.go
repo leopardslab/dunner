@@ -55,12 +55,15 @@ tasks:
 func ExampleListTasks_successWithAllTasksAsBullets() {
 	var tmpFilename = ".testdunner.yaml"
 	var content = []byte(`
-setup:
-  - image: node
-    command: []
-build:
-  - image: node
-    command: []`)
+tasks:
+  setup:
+    steps:
+      - image: node
+        command: []
+  build:
+    steps:
+      - image: node
+        command: []`)
 
 	tmpFile, err := ioutil.TempFile("", tmpFilename)
 	if err != nil {
