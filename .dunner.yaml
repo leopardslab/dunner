@@ -17,6 +17,7 @@ build:
       - ID=dunner
       - DIR=`$HOME`
   - follow: 'show'
+    image: alpine
     args:
       - '/root'
 show:
