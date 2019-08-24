@@ -11,6 +11,7 @@ jobs:
     - uses: actions/checkout@v1
     - name: Build Dunner using Dunner
       run: |
+        sudo apt install bash
         curl https://installer.to/dunner | bash
         dunner version
         dunner do build
