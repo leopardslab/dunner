@@ -14,31 +14,30 @@ Dunner is a task runner tool based on Docker, simple and flexible. You can defin
 Example `.dunner.yaml`:
 
 ```yaml
-deploy:
-- image: 'emeraldsquad/sonar-scanner'
-  commands:
-  - ['sonar', 'scan']
-- image: 'golang'
-  commands:
-  - ['go', 'install']
-- image: 'mesosphere/aws-cli'
-  commands:
-  - ['aws', 'elasticbeanstalk update-application --application-name myapp']
-  envs: 
-   - AWS_ACCESS_KEY_ID=`$AWS_KEY`
-   - AWS_SECRET_ACCESS_KEY=`$AWS_SECRET`
-   - AWS_DEFAULT_REGION=us-east1
-- follow: 'status' #This refers to another task and can pass args too
-  args: 'prod'
-status:
-- image: 'mesosphere/aws-cli'
-  commands:
-  - ['aws', 'elasticbeanstalk describe-events --environment-name $1'] 
-  # This uses args passed to the task, `$1` means first arg
-  envs: 
-   - AWS_ACCESS_KEY_ID=`$AWS_KEY`
-   - AWS_SECRET_ACCESS_KEY=`$AWS_SECRET`
-   - AWS_DEFAULT_REGION=us-east1
+envs:
+  - AWS_ACCESS_KEY_ID=`$AWS_KEY`
+  - AWS_SECRET_ACCESS_KEY=`$AWS_SECRET`
+  - AWS_DEFAULT_REGION=us-east1
+tasks:
+  deploy:
+    steps:
+      - image: 'emeraldsquad/sonar-scanner'
+        commands:
+          - ['sonar', 'scan']
+      - image: 'golang'
+        commands:
+          - ['go', 'install']
+      - image: 'mesosphere/aws-cli'
+        commands:
+          - ['aws', 'elasticbeanstalk update-application --application-name myapp']
+      - follow: 'status' #This refers to another task and can pass args too
+        args: 'prod'
+  status:
+    steps:
+      - image: 'mesosphere/aws-cli'
+        commands:
+          # This uses args passed to the task, `$1` means first arg
+          - ['aws', 'elasticbeanstalk describe-events --environment-name $1']
 ```
 
 Running `dunner do deploy` from command-line executes `deploy` task inside a Docker container. It creates a Docker container using specified image, executes given commands and shows results, all with just simple configuration!

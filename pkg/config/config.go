@@ -20,7 +20,7 @@ You can use the library by creating a dunner task file. For example,
 		commands:
 		  - ["mvn", "package"]
 
-Use `GetConfigs` method to parse the dunner task file, and `ParseEnv` method to parse environment variables file, or
+Use `GetConfigs` method to parse the dunner task file, and `ParseEnvs` method to parse environment variables file, or
 the host environment variables. The environment variables are used by invoking in the task file using backticks(`$var`).
 */
 package config
@@ -93,45 +93,6 @@ var customValidations = []customValidation{
 	},
 }
 
-// Task describes a single task to be run in a docker container
-type Task struct {
-	// Name given as string to identify the task
-	Name string `yaml:"name"`
-
-	// Image is the repo name on which Docker containers are built
-	Image string `yaml:"image" validate:"required_without=Follow"`
-
-	// SubDir is the primary directory on which task is to be run
-	SubDir string `yaml:"dir"`
-
-	// The command which runs on the container and exits
-	Command []string `yaml:"command" validate:"omitempty,dive,required"`
-
-	// The list of commands that are to be run in sequence
-	Commands [][]string `yaml:"commands" validate:"omitempty,dive,omitempty,dive,required"`
-
-	// The list of environment variables to be exported inside the container
-	Envs []string `yaml:"envs"`
-
-	// The directories to be mounted on the container as bind volumes
-	Mounts []string `yaml:"mounts" validate:"omitempty,dive,min=1,mountdir,parsedir"`
-
-	// The next task that must be executed if this does go successfully
-	Follow string `yaml:"follow" validate:"omitempty,follow_exist"`
-
-	// The list of arguments that are to be passed
-	Args []string `yaml:"args"`
-
-	// User that will run the command(s) inside the container, also support user:group
-	User string `yaml:"user"`
-}
-
-// Configs describes the parsed information from the dunner file.
-// It is a map of task name as keys and the list of tasks associated with it.
-type Configs struct {
-	Tasks map[string][]Task `validate:"dive,keys,required,endkeys,required,min=1,required"`
-}
-
 // Validate validates config and returns errors.
 func (configs *Configs) Validate() []error {
 	err := initValidator(customValidations)
@@ -142,10 +103,12 @@ func (configs *Configs) Validate() []error {
 	errs := formatErrors(valErrs, "")
 	ctx := context.WithValue(context.Background(), configsKey, configs)
 
-	// Each task is validated separately so that task name can be added in error messages
-	for taskName, tasks := range configs.Tasks {
-		taskValErrs := govalidator.VarCtx(ctx, tasks, "dive")
-		errs = append(errs, formatErrors(taskValErrs, taskName)...)
+	// Each step is validated separately so that task name can be added in error messages
+	for taskName, task := range configs.Tasks {
+		for _, steps := range task.Steps {
+			taskValErrs := govalidator.VarCtx(ctx, steps, "dive")
+			errs = append(errs, formatErrors(taskValErrs, taskName)...)
+		}
 	}
 	return errs
 }
@@ -269,12 +232,12 @@ func GetConfigs(filename string) (*Configs, error) {
 	}
 
 	var configs Configs
-	if err := yaml.Unmarshal(fileContents, &configs.Tasks); err != nil {
+	if err := yaml.Unmarshal(fileContents, &configs); err != nil {
 		return nil, err
 	}
 
 	loadDotEnv()
-	if err := ParseEnv(&configs); err != nil {
+	if err := ParseEnvs(&configs); err != nil {
 		return nil, err
 	}
 
@@ -320,63 +283,93 @@ func loadDotEnv() {
 	}
 }
 
-// ParseEnv parses the `.env` file as well as the host environment variables.
+// ParseEnvs parses the `.env` file as well as the host environment variables.
 // If the same variable is defined in both the `.env` file and in the host environment,
 // priority is given to the .env file.
 //
 // Note: You can change the filename of environment file (default: `.env`) using `--env-file/-e` flag in the CLI.
-func ParseEnv(configs *Configs) error {
+func ParseEnvs(configs *Configs) error {
+
+	// Parse envs that are global to all
+	for i, envVar := range (*configs).Envs {
+		newEnv, err := obtainEnv(envVar)
+		if err != nil {
+			return err
+		}
+		(*configs).Envs[i] = newEnv
+	}
 	for k, tasks := range (*configs).Tasks {
-		for j, task := range tasks {
-			for i, envVar := range task.Envs {
-				var str = strings.Split(envVar, "=")
-				if len(str) != 2 {
-					return fmt.Errorf(
-						`config: invalid format of environment variable: %v`,
-						envVar,
-					)
-				}
-				var pattern = "^`\\$.+`$"
-				check, err := regexp.MatchString(pattern, str[1])
+
+		// Parse envs that are global to all steps of 'k' task
+		for i, envVar := range tasks.Envs {
+			newEnv, err := obtainEnv(envVar)
+			if err != nil {
+				return err
+			}
+			(*configs).Tasks[k].Envs[i] = newEnv
+		}
+
+		for j, step := range tasks.Steps {
+
+			// Parse envs that are defined for an individual step
+			for i, envVar := range step.Envs {
+				newEnv, err := obtainEnv(envVar)
 				if err != nil {
-					log.Fatal(err)
+					return err
 				}
-				if check {
-					var key = strings.Replace(
-						strings.Replace(
-							str[1],
-							"`",
-							"",
-							-1,
-						),
-						"$",
-						"",
-						1,
-					)
-					var val string
-					// Value of variable defined in environment file (default '.env') overrides
-					// the value defined in host's environment variables.
-					if v, isSet := os.LookupEnv(key); isSet {
-						val = v
-					}
-					if v, isSet := dotEnv[key]; isSet {
-						val = v
-					}
-					if val == "" {
-						return fmt.Errorf(
-							`config: could not find environment variable '%v' in %s file or among host environment variables`,
-							key,
-							viper.GetString("DotenvFile"),
-						)
-					}
-					var newEnv = str[0] + "=" + val
-					(*configs).Tasks[k][j].Envs[i] = newEnv
-				}
+				(*configs).Tasks[k].Steps[j].Envs[i] = newEnv
 			}
 		}
 	}
 
 	return nil
+}
+
+func obtainEnv(envVar string) (string, error) {
+	var str = strings.Split(envVar, "=")
+	if len(str) != 2 {
+		return "", fmt.Errorf(
+			`config: invalid format of environment variable: %v`,
+			envVar,
+		)
+	}
+	var pattern = "^`\\$.+`$"
+	check, err := regexp.MatchString(pattern, str[1])
+	if err != nil {
+		log.Fatal(err)
+	}
+	if check {
+		var key = strings.Replace(
+			strings.Replace(
+				str[1],
+				"`",
+				"",
+				-1,
+			),
+			"$",
+			"",
+			1,
+		)
+		var val string
+		// Value of variable defined in environment file (default '.env') overrides
+		// the value defined in host's environment variables.
+		if v, isSet := os.LookupEnv(key); isSet {
+			val = v
+		}
+		if v, isSet := dotEnv[key]; isSet {
+			val = v
+		}
+		if val == "" {
+			return "", fmt.Errorf(
+				`config: could not find environment variable '%v' in %s file or among host environment variables`,
+				key,
+				viper.GetString("DotenvFile"),
+			)
+		}
+		var newEnv = str[0] + "=" + val
+		return newEnv, nil
+	}
+	return envVar, nil
 }
 
 // DecodeMount parses mount format for directories to be mounted as bind volumes.

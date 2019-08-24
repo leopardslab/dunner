@@ -3,6 +3,7 @@ package dunner
 import (
 	"fmt"
 
+	"github.com/leopardslab/dunner/internal/logger"
 	"github.com/leopardslab/dunner/pkg/config"
 	"github.com/spf13/viper"
 )
@@ -21,7 +22,7 @@ func ListTasks() error {
 	} else {
 		fmt.Println("Available Dunner tasks:")
 		for taskName := range configs.Tasks {
-			fmt.Println(taskName)
+			logger.Bullet(taskName)
 		}
 		fmt.Println("Run `dunner do <task_name>` to run a dunner task.")
 	}
