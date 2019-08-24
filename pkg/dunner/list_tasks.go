@@ -3,6 +3,7 @@ package dunner
 import (
 	"fmt"
 
+	"github.com/leopardslab/dunner/internal/logger"
 	"github.com/leopardslab/dunner/pkg/config"
 	"github.com/spf13/viper"
 )
@@ -20,7 +21,7 @@ func ListTasks() error {
 	if len(errs) != 0 {
 		fmt.Println("Validation failed with following errors:")
 		for _, err := range errs {
-			fmt.Println(err.Error())
+			logger.ErrorOutput(err.Error())
 		}
 		return fmt.Errorf("validation failed")
 	}
@@ -30,7 +31,7 @@ func ListTasks() error {
 	} else {
 		fmt.Println("Available Dunner tasks:")
 		for taskName := range configs.Tasks {
-			fmt.Println(taskName)
+			logger.Bullet(taskName)
 		}
 		fmt.Println("Run `dunner do <task_name>` to run a dunner task.")
 	}
