@@ -107,7 +107,7 @@ func Process(configs *config.Configs, s *docker.Step, wg *sync.WaitGroup, args [
 				wg.Done()
 			}(wg)
 		} else {
-			ExecTask(configs, s.Follow, s.Args, nil)
+			ExecTask(configs, s.Follow, s.Args, dunnerStep)
 		}
 		return
 	}
