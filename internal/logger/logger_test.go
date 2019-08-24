@@ -38,3 +38,11 @@ func TestInitColorOutput_True(t *testing.T) {
 		t.Fatalf("expected no-color to be set as true, but got %v", color.NoColor)
 	}
 }
+
+func ExampleBullet() {
+	arg := "foobar"
+
+	Bullet("setup %s", arg)
+
+	// Output: • setup foobar
+}
