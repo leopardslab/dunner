@@ -13,6 +13,8 @@ jobs:
     - uses: actions/checkout@v1
     - name: Build Dunner and run tests
       run: |
-        go install ./...
+        go get -d -u github.com/golang/dep
+        dep ensure
+        go install
         dunner version
         dunner do show
