@@ -17,13 +17,10 @@ build:
       - ID=dunner
       - DIR=`$HOME`
   - follow: 'show'
+    image: alpine
     args:
       - '/root'
 show:
   - image: alpine
     commands:
-      - ["ls", "$1"]
-    mounts:
-      - '~/Downloads:/root/down'
-      - ~/Pictures:/root/pics:wr
-      - "~/Documents:/root/docs:r"
+      - ["ls"]
