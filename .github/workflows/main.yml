@@ -11,9 +11,23 @@ jobs:
     
     steps:
     - uses: actions/checkout@v1
-    - name: Build Dunner and run tests
+
+    - name: Build Dunner and run tests on linux
+      if: matrix.os == 'ubuntu-latest'
       run: |
-        go install github.com/golang/dep/cmd/dep
+        echo $GOBIN
+        echo $GOPATH
+        curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+        dep ensure
+        go install
+        dunner version
+        dunner do show
+
+    - name: Build Dunner and run tests on Mac
+      if: matrix.os == 'macOS-latest'
+      run: |
+        brew install dep
+        brew upgrade dep
         dep ensure
         go install
         dunner version
