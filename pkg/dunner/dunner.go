@@ -204,10 +204,11 @@ func PassGlobals(step *docker.Step, configs *config.Configs, stepDefinition *con
 		for _, env := range (*step).Env {
 			envKeys[strings.Split(env, "=")[0]] = struct{}{}
 		}
-		taskEnvs := (*configs).Tasks[step.Task].Envs
+		var taskEnvs []string
 		if parentStep != nil {
 			taskEnvs = append(taskEnvs, parentStep.Envs...)
 		}
+		taskEnvs = append(taskEnvs, (*configs).Tasks[step.Task].Envs...)
 		for _, env := range taskEnvs {
 			k := strings.Split(env, "=")[0]
 			if _, present := envKeys[k]; !present {
@@ -232,10 +233,11 @@ func PassGlobals(step *docker.Step, configs *config.Configs, stepDefinition *con
 		for _, mount := range (*stepDefinition).Mounts {
 			targets[strings.Split(mount, ":")[1]] = struct{}{}
 		}
-		taskMounts := (*configs).Tasks[step.Task].Mounts
+		var taskMounts []string
 		if parentStep != nil {
 			taskMounts = append(taskMounts, parentStep.Mounts...)
 		}
+		taskMounts = append(taskMounts, (*configs).Tasks[step.Task].Mounts...)
 		for _, mount := range taskMounts {
 			k := strings.Split(mount, ":")[1]
 			if _, present := targets[k]; !present {
