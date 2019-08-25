@@ -39,7 +39,7 @@ func ExampleStep_Exec() {
 	if err != nil {
 		panic(err)
 	}
-	// Output: OUT: v10.15.0
+	// Output: v10.15.0
 }
 
 func ExampleStep_workingDirAbs() {
@@ -50,7 +50,7 @@ func ExampleStep_workingDirAbs() {
 	if err != nil {
 		panic(err)
 	}
-	// Output: OUT: /go
+	// Output: /go
 }
 
 func Example_workingDirRel() {
@@ -60,7 +60,7 @@ func Example_workingDirRel() {
 	if err != nil {
 		panic(err)
 	}
-	// Output: OUT: /dunner
+	// Output: /dunner
 }
 
 func runCommand(command []string, dir string, nodeVer string) error {
