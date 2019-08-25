@@ -200,41 +200,28 @@ func (step Step) Exec() error {
 	}
 
 	for _, cmd := range commands {
-		finishedMsg := fmt.Sprintf(
-			"Finished running command '%s' on '%s' docker",
-			strings.Join(cmd, " "),
-			step.Image,
-		)
-		var (
-			done chan bool
-			show chan bool
-		)
-		if !async {
-			done = make(chan bool)
-			show = make(chan bool)
-			go util.ShowLoadingMessage(
-				fmt.Sprintf(
-					"Running command '%s' of '%s' task on a container of '%s' image",
-					strings.Join(cmd, " "),
-					step.Task,
-					step.Image,
-				),
-				finishedMsg,
-				&done,
-				&show,
-			)
-		}
-
 		if dryRun {
 			continue
 		}
-		r, err := runCmd(ctx, cli, resp.ID, cmd)
+
 		if !async {
-			done <- true
+			log.Infof(
+				"Running command '%s' of '%s' task on a container of '%s' image",
+				strings.Join(cmd, " "),
+				step.Task,
+				step.Image,
+			)
 		}
-		if async || <-show {
+
+		r, err := runCmd(ctx, cli, resp.ID, cmd)
+
+		if async {
 			if async {
-				log.Info(finishedMsg)
+				log.Infof(
+					"Finished running command '%s' on '%s' docker",
+					strings.Join(cmd, " "),
+					step.Image,
+				)
 			}
 			if r != nil && r.Output != "" {
 				fmt.Printf(`OUT: %s`, r.Output)
@@ -286,16 +273,22 @@ func runCmd(ctx context.Context, cli *client.Client, containerID string, command
 // ExtractResult can parse output and/or error corresponding to the command passed as an argument,
 // from an io.Reader and convert to an object of strings.
 func ExtractResult(reader io.Reader, command []string) *Result {
-	var out, errOut bytes.Buffer
-	if _, err := stdcopy.StdCopy(&out, &errOut, reader); err != nil {
-		log.Fatal(err)
+	if viper.GetBool("Async") {
+		var out, errOut bytes.Buffer
+		if _, err := stdcopy.StdCopy(&out, &errOut, reader); err != nil {
+			log.Fatal(err)
+		}
+		var result = Result{
+			Output: out.String(),
+			Error:  errOut.String(),
+		}
+		return &result
 	}
 
-	var result = Result{
-		Output: out.String(),
-		Error:  errOut.String(),
+	if _, err := stdcopy.StdCopy(os.Stdout, logger.NewErrWriter(), reader); err != nil {
+		log.Fatal(err)
 	}
-	return &result
+	return nil
 }
 
 // CheckImageExist checks for the image whether it is present on the host machine or not.
