@@ -5,12 +5,16 @@ import (
 	"io/ioutil"
 	"os"
 	os_user "os/user"
+	"reflect"
 	"testing"
 
+	"github.com/docker/docker/api/types/mount"
 	"github.com/leopardslab/dunner/pkg/config"
 	"github.com/leopardslab/dunner/pkg/docker"
 	"github.com/spf13/viper"
 )
+
+var busyBoxImage = "busybox:1.31"
 
 func TestDo(t *testing.T) {
 
@@ -103,7 +107,7 @@ func doContent(content *[]byte) error {
 func TestExecTask(t *testing.T) {
 	var step = config.Step{
 		Name:     "",
-		Image:    "busybox",
+		Image:    busyBoxImage,
 		Commands: [][]string{{"ls", "/"}, {"ls", "$1"}},
 		Envs:     []string{"MYVAR=MYVAL"},
 	}
@@ -113,7 +117,7 @@ func TestExecTask(t *testing.T) {
 		Tasks: tasks,
 	}
 
-	if err := ExecTask(&configs, "test", []string{"/dunner"}); err != nil {
+	if err := ExecTask(&configs, "test", []string{"/dunner"}, nil); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -169,5 +173,96 @@ func TestPassArgs_SingleCommand(t *testing.T) {
 	expectedErr := fmt.Errorf(`dunner: insufficient number of arguments passed`)
 	if err.Error() != expectedErr.Error() {
 		t.Fatal("Improper or no error for insufficient number of arguments")
+	}
+}
+
+func TestPassGlobalsToOverrideGlobalLevelValuesFromFollowTask(t *testing.T) {
+	dockerStep := &docker.Step{Task: "build"}
+	tasks := make(map[string]config.Task, 0)
+
+	step := config.Step{Image: busyBoxImage}
+	tasks["build"] = config.Task{Steps: []config.Step{step}, Envs: []string{"foo=bar"}, Mounts: []string{"/abc:/def"}}
+
+	overridenEnv := "NAME=followtask"
+	followStep := config.Step{Follow: "build", Envs: []string{overridenEnv}, Mounts: []string{"/foo:/tmp:w"}}
+	tasks["run"] = config.Task{Steps: []config.Step{followStep}}
+	configs := &config.Configs{Tasks: tasks, Envs: []string{"NAME=global"}, Mounts: []string{"/var:/tmp"}}
+
+	PassGlobals(dockerStep, configs, &step, &followStep)
+
+	if len(dockerStep.Env) != 2 {
+		t.Fatalf("expected env to be of length 2, got %d: %v", len(dockerStep.Env), dockerStep.Env)
+	}
+
+	expectedEnvs := []string{overridenEnv, "foo=bar"}
+	if !reflect.DeepEqual(expectedEnvs, dockerStep.Env) {
+		t.Errorf("expected: %v, got: %v", expectedEnvs, dockerStep.Env)
+	}
+
+	if len(dockerStep.ExtMounts) != 2 {
+		t.Fatalf("expected mounts to be of length 2, got %d: %v", len(dockerStep.ExtMounts), dockerStep.ExtMounts)
+	}
+
+	expectedMounts := []mount.Mount{
+		mount.Mount{
+			Type:     mount.TypeBind,
+			Source:   "/foo",
+			Target:   "/tmp",
+			ReadOnly: false,
+		},
+		mount.Mount{
+			Type:     mount.TypeBind,
+			Source:   "/abc",
+			Target:   "/def",
+			ReadOnly: true,
+		},
+	}
+	if !reflect.DeepEqual(expectedMounts, dockerStep.ExtMounts) {
+		t.Errorf("expected: %v, got: %v", expectedMounts, dockerStep.ExtMounts)
+	}
+}
+
+func TestPassGlobalsToOverrideTaskLevelValuesFromFollowTask(t *testing.T) {
+	dockerStep := &docker.Step{Task: "build"}
+	tasks := make(map[string]config.Task, 0)
+
+	step := config.Step{Image: busyBoxImage}
+	tasks["build"] = config.Task{Steps: []config.Step{step}, Envs: []string{"foo=bar", "NAME=tasklevel"}, Mounts: []string{"/abc:/def", "/task:/tmp"}}
+
+	followStep := config.Step{Follow: "build", Envs: []string{"NAME=followLevel"}, Mounts: []string{"/follow:/tmp:w"}}
+	tasks["run"] = config.Task{Steps: []config.Step{followStep}}
+	configs := &config.Configs{Tasks: tasks, Envs: []string{"NAME=global"}, Mounts: []string{"/global:/tmp"}}
+
+	PassGlobals(dockerStep, configs, &step, &followStep)
+
+	if len(dockerStep.Env) != 2 {
+		t.Fatalf("expected env to be of length 2, got %d: %v", len(dockerStep.Env), dockerStep.Env)
+	}
+
+	expectedEnvs := []string{"NAME=followLevel", "foo=bar"}
+	if !reflect.DeepEqual(expectedEnvs, dockerStep.Env) {
+		t.Errorf("expected: %v, got: %v", expectedEnvs, dockerStep.Env)
+	}
+
+	if len(dockerStep.ExtMounts) != 2 {
+		t.Fatalf("expected mounts to be of length 2, got %d: %v", len(dockerStep.ExtMounts), dockerStep.ExtMounts)
+	}
+
+	expectedMounts := []mount.Mount{
+		mount.Mount{
+			Type:     mount.TypeBind,
+			Source:   "/follow",
+			Target:   "/tmp",
+			ReadOnly: false,
+		},
+		mount.Mount{
+			Type:     mount.TypeBind,
+			Source:   "/abc",
+			Target:   "/def",
+			ReadOnly: true,
+		},
+	}
+	if !reflect.DeepEqual(expectedMounts, dockerStep.ExtMounts) {
+		t.Errorf("expected: %v, got: %v", expectedMounts, dockerStep.ExtMounts)
 	}
 }
