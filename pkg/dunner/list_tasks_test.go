@@ -87,13 +87,15 @@ tasks:
 
 func ExampleListTasks_successWithAllTasksAsBullets() {
 	var tmpFilename = ".testdunner.yaml"
-	var content = []byte(`
-setup:
-  - image: node
-    command: []
-build:
-  - image: node
-    command: []`)
+	var content = []byte(`tasks:
+  build:
+    steps:
+      - image: node
+        command: []
+  setup:
+    steps:
+      - image: node
+        command: []`)
 
 	tmpFile, err := ioutil.TempFile("", tmpFilename)
 	if err != nil {
@@ -115,8 +117,8 @@ build:
 	ListTasks()
 
 	// Output: Available Dunner tasks:
-	// • setup
 	// • build
+	// • setup
 	// Run `dunner do <task_name>` to run a dunner task.
 }
 
