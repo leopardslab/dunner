@@ -440,7 +440,7 @@ func TestDecodeMount(t *testing.T) {
 
 func TestDecodeMountWithEnvironmentVariable(t *testing.T) {
 	step := &docker.Step{}
-	mounts := []string{"`$HOME`:`$HOME`"}
+	mounts := []string{"/tmp:/app"}
 
 	err := DecodeMount(mounts, step)
 
@@ -453,11 +453,34 @@ func TestDecodeMountWithEnvironmentVariable(t *testing.T) {
 	if len((*step).ExtMounts) != 1 {
 		t.Fatalf("expected ExtMounts to be of length 1, got %d", len((*step).ExtMounts))
 	}
-	if (*step).ExtMounts[0].Source != util.HomeDir {
-		t.Fatalf("expected ExtMounts Source to be %s, got %s", util.HomeDir, (*step).ExtMounts[0].Source)
+	if (*step).ExtMounts[0].Source != "/tmp" {
+		t.Fatalf("expected ExtMounts Source to be '/tmp', got %s", (*step).ExtMounts[0].Source)
 	}
-	if (*step).ExtMounts[0].Target != util.HomeDir {
-		t.Fatalf("expected ExtMounts Source to be %s, got %s", util.HomeDir, (*step).ExtMounts[0].Target)
+	if (*step).ExtMounts[0].Target != "/app" {
+		t.Fatalf("expected ExtMounts Source to be '/app', got %s", (*step).ExtMounts[0].Target)
+	}
+}
+
+func TestDecodeMountWithShorthandHomeDir(t *testing.T) {
+	step := &docker.Step{}
+	mounts := []string{"~/tmp:/app"}
+
+	err := DecodeMount(mounts, step)
+
+	if err != nil {
+		t.Fatalf("expected no error, got %s", err.Error())
+	}
+	if (*step).ExtMounts == nil {
+		t.Fatalf("expected ExtMounts to be set, got nil")
+	}
+	if len((*step).ExtMounts) != 1 {
+		t.Fatalf("expected ExtMounts to be of length 1, got %d", len((*step).ExtMounts))
+	}
+	if (*step).ExtMounts[0].Source != fmt.Sprintf("%s/tmp", util.HomeDir) {
+		t.Fatalf("expected ExtMounts Source to be '/tmp', got %s", (*step).ExtMounts[0].Source)
+	}
+	if (*step).ExtMounts[0].Target != "/app" {
+		t.Fatalf("expected ExtMounts Source to be '/app', got %s", (*step).ExtMounts[0].Target)
 	}
 }
 
@@ -524,5 +547,118 @@ func setup(t *testing.T) func() {
 		if err = os.Chdir(previous); err != nil {
 			t.Errorf("Failed to revert change in working directory: %s", err.Error())
 		}
+	}
+}
+
+func TestParseStepEnvToReplaceDirSuccess(t *testing.T) {
+	mainDir := "MY_ENVNAME"
+	os.Setenv(mainDir, "foobar")
+	subDir := "SUBDIR"
+	os.Setenv(subDir, "dunner")
+	defer os.Unsetenv(mainDir)
+	defer os.Unsetenv(subDir)
+	step := &Step{Image: "node", Dir: fmt.Sprintf("/tmp/`$%s`/`$%s`", mainDir, subDir)}
+
+	err := step.ParseStepEnv()
+
+	if err != nil {
+		t.Fatalf("expected no error, got %s", err)
+	}
+	expected := "/tmp/foobar/dunner"
+	if step.Dir != expected {
+		t.Errorf("expected step dir: %s, got: %s", expected, step.Dir)
+	}
+}
+
+func TestParseStepEnvToReplaceDirFailure(t *testing.T) {
+	env := "MY_UNSET_ENV"
+	sErr := os.Unsetenv(env)
+	if sErr != nil {
+		t.Fatalf("failed to setup test environment: %s", sErr)
+	}
+	dir := "/tmp/`$MY_UNSET_ENV`"
+	step := &Step{Image: "node", Dir: dir}
+
+	err := step.ParseStepEnv()
+
+	expectedErr := "could not find environment variable 'MY_UNSET_ENV'"
+	if err == nil || err.Error() != expectedErr {
+		t.Fatalf("expected error %s, got %s", expectedErr, err)
+	}
+	if step.Dir != dir {
+		t.Errorf("expected step dir: %s, got: %s", dir, step.Dir)
+	}
+}
+
+func TestParseStepEnvToReplaceMountSuccess(t *testing.T) {
+	srcDir := "MY_ENVNAME"
+	os.Setenv(srcDir, "foobar")
+	destDir := "SUBDIR"
+	os.Setenv(destDir, "dunner")
+	defer os.Unsetenv(srcDir)
+	defer os.Unsetenv(destDir)
+	step := &Step{Image: "node", Mounts: []string{fmt.Sprintf("/tmp/`$%s`:/tmp/`$%s`/foo:w", srcDir, destDir)}}
+
+	err := step.ParseStepEnv()
+
+	if err != nil {
+		t.Fatalf("expected no error, got %s", err)
+	}
+	expected := "/tmp/foobar:/tmp/dunner/foo:w"
+	if step.Mounts[0] != expected {
+		t.Errorf("expected step mount: %s, got: %s", expected, step.Mounts[0])
+	}
+}
+
+func TestParseStepEnvToReplaceMountFailure(t *testing.T) {
+	srcDir := "MY_ENVNAME"
+	os.Setenv(srcDir, "foobar")
+	defer os.Unsetenv(srcDir)
+	destDir := "SUBDIR"
+	os.Unsetenv(destDir)
+	mount := fmt.Sprintf("/tmp/`$%s`:/tmp/`$%s`/foo:w", srcDir, destDir)
+	step := &Step{Image: "node", Mounts: []string{mount}}
+
+	err := step.ParseStepEnv()
+
+	expectedErr := "could not find environment variable 'SUBDIR'"
+	if err == nil || err.Error() != expectedErr {
+		t.Fatalf("expected error %s, got %s", expectedErr, err)
+	}
+	if step.Mounts[0] != mount {
+		t.Errorf("expected step mount: %s, got: %s", mount, step.Mounts[0])
+	}
+}
+
+func TestParseStepEnvToReplaceUserFailure(t *testing.T) {
+	env := "UNSET_USER"
+	sErr := os.Unsetenv(env)
+	if sErr != nil {
+		t.Fatalf("failed to setup test environment: %s", sErr)
+	}
+	user := "`$UNSET_USER`"
+	step := &Step{Image: "node", User: user}
+
+	err := step.ParseStepEnv()
+
+	expectedErr := "could not find environment variable 'UNSET_USER'"
+	if err == nil || err.Error() != expectedErr {
+		t.Fatalf("expected error %s, got %s", expectedErr, err)
+	}
+	if step.User != user {
+		t.Errorf("expected step dir: %s, got: %s", user, step.User)
+	}
+}
+
+func TestParseStepEnvToReplaceUserSuccess(t *testing.T) {
+	step := &Step{Image: "node", User: "`$USER`"}
+
+	err := step.ParseStepEnv()
+
+	if err != nil {
+		t.Fatalf("expected no error, got %s", err)
+	}
+	if step.User != os.Getenv("USER") {
+		t.Errorf("expected step dir: %s, got: %s", os.Getenv("USER"), step.User)
 	}
 }

@@ -118,6 +118,23 @@ func TestExecTask(t *testing.T) {
 	}
 }
 
+func TestExecTaskWithParseError(t *testing.T) {
+	step := config.Step{
+		Image: "busybox",
+		Dir:   "`$INVALID_USER_NONEXISTING`",
+	}
+	tasks := make(map[string]config.Task)
+	tasks["test"] = config.Task{Steps: []config.Step{step}}
+	configs := config.Configs{Tasks: tasks}
+
+	err := ExecTask(&configs, "test", []string{})
+
+	expectedErr := "could not find environment variable 'INVALID_USER_NONEXISTING'"
+	if err == nil || err.Error() != expectedErr {
+		t.Fatalf("expected error: %s, got %s", expectedErr, err)
+	}
+}
+
 func TestExecTaskAsync(t *testing.T) {
 	async := viper.GetBool("Async")
 	viper.Set("Async", true)
