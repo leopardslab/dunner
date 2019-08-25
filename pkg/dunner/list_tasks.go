@@ -17,15 +17,6 @@ func ListTasks() error {
 		return err
 	}
 
-	errs := configs.Validate()
-	if len(errs) != 0 {
-		fmt.Println("Validation failed with following errors:")
-		for _, err := range errs {
-			logger.ErrorOutput(err.Error())
-		}
-		return fmt.Errorf("validation failed")
-	}
-
 	if len(configs.Tasks) == 0 {
 		fmt.Println("No dunner tasks found")
 	} else {
