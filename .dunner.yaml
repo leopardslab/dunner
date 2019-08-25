@@ -14,10 +14,14 @@ tasks:
       - image: node:10.15.0
         commands:
           - ["node", "--version"]
-          - ["npm", "--version"]
+          - ["npm", "install", "-g", "redis-commander"]
+        user: root
       - image: alpine
         dir: pkg
-        command: ["pwd"]
+        commands:
+          - ["apk", "update"]
+          - ["pwd"]
+        user: root
       - image: alpine
         commands:
           - ["ls", "/tmp"]
