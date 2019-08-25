@@ -23,39 +23,6 @@ func Test_ListTasksWhenConfigFileNotFound(t *testing.T) {
 	}
 }
 
-func Test_ListTasksWhenValidationFails(t *testing.T) {
-	var tmpFilename = ".testdunner.yaml"
-	var content = []byte(`
-envs:
-  - GLB=VARBL
-tasks:
-  setup:
-    steps:
-      - image: node
-        commands:
-          - ["node", "--version"]
-          - ["npm", "--version"]
-        envs:
-          - MYVAR=MYVAL
-  build:
-    steps:
-      - command: []`)
-
-	tmpFile := createDunnerTaskFile(t, content, tmpFilename)
-	defer os.Remove(tmpFile.Name())
-	defer viper.Reset()
-
-	err := ListTasks()
-
-	expected := "validation failed"
-	if err == nil {
-		t.Fatalf("got: %s, want: %s", err, expected)
-	}
-	if err.Error() != expected {
-		t.Fatalf("got: %s, want: %s", err.Error(), expected)
-	}
-}
-
 func Test_ListTasksSuccess(t *testing.T) {
 	var tmpFilename = ".testdunner.yaml"
 	var content = []byte(`
