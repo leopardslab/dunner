@@ -278,7 +278,7 @@ func ExtractResult(reader io.Reader, command []string) *Result {
 		return &result
 	}
 
-	if _, err := stdcopy.StdCopy(os.Stdout, os.Stderr, reader); err != nil {
+	if _, err := stdcopy.StdCopy(os.Stdout, logger.NewErrWriter(), reader); err != nil {
 		log.Fatal(err)
 	}
 	return nil

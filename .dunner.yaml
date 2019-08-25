@@ -14,7 +14,6 @@ tasks:
       - image: node:10.15.0
         commands:
           - ["node", "--version"]
-          - ["npm", "install", "-g", "redis-commander"]
         user: root
       - image: alpine
         dir: pkg
