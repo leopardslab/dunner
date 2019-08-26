@@ -59,9 +59,10 @@ type Result struct {
 // corresponding updates.
 func (step Step) Exec() error {
 	var (
-		async   = viper.GetBool("Async")
-		dryRun  = viper.GetBool("Dry-run")
-		verbose = viper.GetBool("Verbose")
+		async     = viper.GetBool("Async")
+		dryRun    = viper.GetBool("Dry-run")
+		verbose   = viper.GetBool("Verbose")
+		forcePull = viper.GetBool("Force-pull")
 	)
 
 	var (
@@ -83,42 +84,57 @@ func (step Step) Exec() error {
 		log.Fatal(err)
 	}
 
-	loadingMsg := fmt.Sprintf("Pulling image: '%s'", step.Image)
-
-	var done chan bool
-	if !async {
-		done = make(chan bool)
-		go util.ShowLoadingMessage(
-			loadingMsg,
-			fmt.Sprintf("Pulled image: '%s'", step.Image),
-			&done,
-			nil,
-		)
-	} else {
-		log.Info(loadingMsg)
-	}
-
-	out, err := cli.ImagePull(ctx, step.Image, types.ImagePullOptions{})
+	check, err := CheckImageExist(ctx, cli, step.Image, false)
 	if err != nil {
-		return fmt.Errorf("Failed to pull image %s: %s", step.Image, err.Error())
-	}
-
-	termFd, isTerm := term.GetFdInfo(os.Stdout)
-	if verbose {
-		if err = jsonmessage.DisplayJSONMessagesStream(out, os.Stdout, termFd, isTerm, nil); err != nil {
-			log.Fatal(err)
-		}
-	} else {
-		if err = jsonmessage.DisplayJSONMessagesStream(out, ioutil.Discard, termFd, isTerm, nil); err != nil {
-			log.Fatal(err)
-		}
-	}
-
-	if !async {
-		done <- true
-	}
-	if err = out.Close(); err != nil {
 		log.Fatal(err)
+	}
+	if forcePull || !check {
+		loadingMsg := fmt.Sprintf("Pulling image: '%s'", step.Image)
+		var done chan bool
+		if !async {
+			done = make(chan bool)
+			go util.ShowLoadingMessage(
+				loadingMsg,
+				fmt.Sprintf("Pulled image: '%s'", step.Image),
+				&done,
+				nil,
+			)
+		} else {
+			log.Info(loadingMsg)
+		}
+
+		out, err := cli.ImagePull(ctx, step.Image, types.ImagePullOptions{})
+		if err != nil {
+			log.Debug(err)
+			log.Infoln("Failed to fetch docker image from Docker Hub, checking in the host...")
+			if check, _ = CheckImageExist(ctx, cli, step.Image, true); !check {
+				return fmt.Errorf(`docker: failed to pull image %s: %s`, step.Image, err.Error())
+			}
+		}
+
+		if out != nil {
+			termFd, isTerm := term.GetFdInfo(os.Stdout)
+			if verbose {
+				if err = jsonmessage.DisplayJSONMessagesStream(out, os.Stdout, termFd, isTerm, nil); err != nil {
+					log.Fatal(err)
+				}
+			} else {
+				if err = jsonmessage.DisplayJSONMessagesStream(out, ioutil.Discard, termFd, isTerm, nil); err != nil {
+					log.Fatal(err)
+				}
+			}
+
+			if err = out.Close(); err != nil {
+				log.Fatal(err)
+			}
+		}
+
+		if !async {
+			done <- true
+		}
+		if err = out.Close(); err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	var containerWorkingDir = containerDefaultWorkingDir
@@ -157,6 +173,13 @@ func (step Step) Exec() error {
 		}
 	}
 
+	defer func(containerID string) {
+		if err := cli.ContainerRemove(ctx, containerID, types.ContainerRemoveOptions{}); err != nil {
+			log.Fatal(err)
+		}
+
+	}(resp.ID)
+
 	if err = cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
 		log.Fatal(err)
 	}
@@ -177,41 +200,28 @@ func (step Step) Exec() error {
 	}
 
 	for _, cmd := range commands {
-		finishedMsg := fmt.Sprintf(
-			"Finished running command '%s' on '%s' docker",
-			strings.Join(cmd, " "),
-			step.Image,
-		)
-		var (
-			done chan bool
-			show chan bool
-		)
-		if !async {
-			done = make(chan bool)
-			show = make(chan bool)
-			go util.ShowLoadingMessage(
-				fmt.Sprintf(
-					"Running command '%s' of '%s' task on a container of '%s' image",
-					strings.Join(cmd, " "),
-					step.Task,
-					step.Image,
-				),
-				finishedMsg,
-				&done,
-				&show,
-			)
-		}
-
 		if dryRun {
 			continue
 		}
-		r, err := runCmd(ctx, cli, resp.ID, cmd)
+
 		if !async {
-			done <- true
+			log.Infof(
+				"Running command '%s' of '%s' task on a container of '%s' image",
+				strings.Join(cmd, " "),
+				step.Task,
+				step.Image,
+			)
 		}
-		if async || <-show {
+
+		r, err := runCmd(ctx, cli, resp.ID, cmd)
+
+		if async {
 			if async {
-				log.Info(finishedMsg)
+				log.Infof(
+					"Finished running command '%s' on '%s' docker",
+					strings.Join(cmd, " "),
+					step.Image,
+				)
 			}
 			if r != nil && r.Output != "" {
 				fmt.Printf(`OUT: %s`, r.Output)
@@ -254,7 +264,7 @@ func runCmd(ctx context.Context, cli *client.Client, containerID string, command
 		log.Fatal(err)
 	}
 	if info.ExitCode != 0 {
-		return result, fmt.Errorf("Command execution failed with exit code %d", info.ExitCode)
+		return result, fmt.Errorf("docker: command execution failed with exit code %d", info.ExitCode)
 	}
 
 	return result, nil
@@ -263,14 +273,48 @@ func runCmd(ctx context.Context, cli *client.Client, containerID string, command
 // ExtractResult can parse output and/or error corresponding to the command passed as an argument,
 // from an io.Reader and convert to an object of strings.
 func ExtractResult(reader io.Reader, command []string) *Result {
-	var out, errOut bytes.Buffer
-	if _, err := stdcopy.StdCopy(&out, &errOut, reader); err != nil {
-		log.Fatal(err)
+	if viper.GetBool("Async") {
+		var out, errOut bytes.Buffer
+		if _, err := stdcopy.StdCopy(&out, &errOut, reader); err != nil {
+			log.Fatal(err)
+		}
+		var result = Result{
+			Output: out.String(),
+			Error:  errOut.String(),
+		}
+		return &result
 	}
 
-	var result = Result{
-		Output: out.String(),
-		Error:  errOut.String(),
+	if _, err := stdcopy.StdCopy(os.Stdout, logger.NewErrWriter(), reader); err != nil {
+		log.Fatal(err)
 	}
-	return &result
+	return nil
+}
+
+// CheckImageExist checks for the image whether it is present on the host machine or not.
+func CheckImageExist(ctx context.Context, cli *client.Client, image string, notag bool) (bool, error) {
+	log.Debugf("docker: checking existence of the image '%s'", image)
+	var splitImage = strings.Split(image, ":")
+	if len(splitImage) <= 2 {
+		hostImages, err := cli.ImageList(ctx, types.ImageListOptions{})
+		if err != nil {
+			log.Error(err)
+		}
+		for _, imageSummary := range hostImages {
+			for _, rt := range imageSummary.RepoTags {
+				if len(splitImage) < 2 && notag {
+					if strings.Split(rt, ":")[0] == image {
+						log.Infof("Image '%s' exists with the host", image)
+						return true, nil
+					}
+				}
+				if rt == image {
+					log.Infof("Image '%s' exists with the host", image)
+					return true, nil
+				}
+			}
+		}
+		return false, nil
+	}
+	return false, fmt.Errorf(`docker: incorrect format for image name`)
 }

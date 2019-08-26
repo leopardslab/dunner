@@ -36,6 +36,7 @@ func Init() {
 	viper.SetDefault("Verbose", false)
 	viper.SetDefault("Dry-run", false)
 	viper.SetDefault("No-color", false)
+	viper.SetDefault("Force-pull", false)
 
 	// Constants
 	viper.SetDefault("DockerAPIVersion", "1.39")

@@ -47,13 +47,13 @@ func Do(_ *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	if err = ExecTask(configs, args[0], args[1:]); err != nil {
+	if err = ExecTask(configs, args[0], args[1:], nil); err != nil {
 		log.Fatal(err)
 	}
 }
 
 // ExecTask processes the parsed tasks from the dunner task file
-func ExecTask(configs *config.Configs, taskName string, args []string) error {
+func ExecTask(configs *config.Configs, taskName string, args []string, parentStep *config.Step) error {
 	var async = viper.GetBool("Async")
 	var wg sync.WaitGroup
 
@@ -81,14 +81,14 @@ func ExecTask(configs *config.Configs, taskName string, args []string) error {
 			User:     getDunnerUser(stepDefinition),
 		}
 
-		if err := PassGlobals(&step, configs, &stepDefinition); err != nil {
+		if err := PassGlobals(&step, configs, &stepDefinition, parentStep); err != nil {
 			log.Fatal(err)
 		}
 
 		if async {
-			go Process(configs, &step, &wg, args)
+			go Process(configs, &step, &wg, args, &stepDefinition)
 		} else {
-			Process(configs, &step, &wg, args)
+			Process(configs, &step, &wg, args, &stepDefinition)
 		}
 	}
 
@@ -97,7 +97,7 @@ func ExecTask(configs *config.Configs, taskName string, args []string) error {
 }
 
 // Process executes a single step of the task.
-func Process(configs *config.Configs, s *docker.Step, wg *sync.WaitGroup, args []string) {
+func Process(configs *config.Configs, s *docker.Step, wg *sync.WaitGroup, args []string, dunnerStep *config.Step) {
 	var async = viper.GetBool("Async")
 	if async {
 		defer wg.Done()
@@ -107,11 +107,11 @@ func Process(configs *config.Configs, s *docker.Step, wg *sync.WaitGroup, args [
 		if async {
 			wg.Add(1)
 			go func(wg *sync.WaitGroup) {
-				ExecTask(configs, s.Follow, s.Args)
+				ExecTask(configs, s.Follow, s.Args, dunnerStep)
 				wg.Done()
 			}(wg)
 		} else {
-			ExecTask(configs, s.Follow, s.Args)
+			ExecTask(configs, s.Follow, s.Args, dunnerStep)
 		}
 		return
 	}
@@ -197,7 +197,7 @@ func getDunnerUser(step config.Step) string {
 //
 // Since both of these parings are independent of each other, they are carried out
 // concurrently on two different goroutines to increase the execution speed.
-func PassGlobals(step *docker.Step, configs *config.Configs, stepDefinition *config.Step) error {
+func PassGlobals(step *docker.Step, configs *config.Configs, stepDefinition *config.Step, parentStep *config.Step) error {
 	var wg sync.WaitGroup
 	wg.Add(2)
 
@@ -208,7 +208,12 @@ func PassGlobals(step *docker.Step, configs *config.Configs, stepDefinition *con
 		for _, env := range (*step).Env {
 			envKeys[strings.Split(env, "=")[0]] = struct{}{}
 		}
-		for _, env := range (*configs).Tasks[step.Task].Envs {
+		var taskEnvs []string
+		if parentStep != nil {
+			taskEnvs = append(taskEnvs, parentStep.Envs...)
+		}
+		taskEnvs = append(taskEnvs, (*configs).Tasks[step.Task].Envs...)
+		for _, env := range taskEnvs {
 			k := strings.Split(env, "=")[0]
 			if _, present := envKeys[k]; !present {
 				step.Env = append(step.Env, env)
@@ -232,7 +237,12 @@ func PassGlobals(step *docker.Step, configs *config.Configs, stepDefinition *con
 		for _, mount := range (*stepDefinition).Mounts {
 			targets[strings.Split(mount, ":")[1]] = struct{}{}
 		}
-		for _, mount := range (*configs).Tasks[step.Task].Mounts {
+		var taskMounts []string
+		if parentStep != nil {
+			taskMounts = append(taskMounts, parentStep.Mounts...)
+		}
+		taskMounts = append(taskMounts, (*configs).Tasks[step.Task].Mounts...)
+		for _, mount := range taskMounts {
 			k := strings.Split(mount, ":")[1]
 			if _, present := targets[k]; !present {
 				allMounts = append(allMounts, mount)
