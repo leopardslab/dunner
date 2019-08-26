@@ -122,6 +122,32 @@ func TestExecTask(t *testing.T) {
 	}
 }
 
+func ExampleExecTask_taskWithFollowStep() {
+	var buildStep = config.Step{
+		Image:    busyBoxImage,
+		Commands: [][]string{{"echo", "build"}},
+	}
+	var step = config.Step{
+		Follow: "build",
+	}
+	var testStep = config.Step{
+		Image:    busyBoxImage,
+		Commands: [][]string{{"echo", "test"}},
+	}
+	var tasks = make(map[string]config.Task)
+	tasks["test"] = config.Task{Steps: []config.Step{step, testStep}}
+	tasks["build"] = config.Task{Steps: []config.Step{buildStep}}
+	var configs = config.Configs{
+		Tasks: tasks,
+	}
+
+	if err := ExecTask(&configs, "test", []string{"/dunner"}, nil); err != nil {
+		panic(err)
+	}
+	// OUTPUT: build
+	// test
+}
+
 func TestExecTaskWithParseError(t *testing.T) {
 	step := config.Step{
 		Image: "busybox",
@@ -131,7 +157,7 @@ func TestExecTaskWithParseError(t *testing.T) {
 	tasks["test"] = config.Task{Steps: []config.Step{step}}
 	configs := config.Configs{Tasks: tasks}
 
-	err := ExecTask(&configs, "test", []string{})
+	err := ExecTask(&configs, "test", []string{}, nil)
 
 	expectedErr := "could not find environment variable 'INVALID_USER_NONEXISTING'"
 	if err == nil || err.Error() != expectedErr {
