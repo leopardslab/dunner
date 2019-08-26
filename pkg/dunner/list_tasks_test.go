@@ -89,7 +89,7 @@ tasks:
 		panic(err)
 	}
 
-	// Output: Available Dunner tasks:
+	// Unordered output: Available Dunner tasks:
 	// • setup
 	// • build
 	// Run `dunner do <task_name>` to run a dunner task.
