@@ -14,6 +14,7 @@ jobs:
     - uses: actions/setup-go@v1
       with:
         go-version: '1.11.x'
+    - uses: cedrickring/golang-action/go1.11
     - name: Build Dunner and run unit tests
       run: |
         echo $(go env GOPATH)
@@ -22,7 +23,7 @@ jobs:
         curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
         ls -al
         ls -al $(go env GOPATH)/bin
-        $(go env GOPATH)/bin/dep ensure
+        $(go env GOPATH)/bin/dep -v ensure
         make setup
         make ci
         make build
