@@ -22,7 +22,7 @@ jobs:
         curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
         ls -al
         ls -al $(go env GOPATH)/bin
-        $(go env GOPATH)/bin/dep -v ensure
+        $(go env GOPATH)/bin/dep ensure -v
         make setup
         make ci
         make build
