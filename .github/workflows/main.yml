@@ -16,7 +16,7 @@ jobs:
         go-version: '1.11.x'
     - name: Build Dunner and run unit tests
       env:
-        PATH: ${{ "$PATH:$GOPATH/bin" }}
+        PATH: ${{ '$PATH:$GOPATH/bin' }}
       run: |
         echo $(go env GOPATH)
         echo $(go env GOBIN)
