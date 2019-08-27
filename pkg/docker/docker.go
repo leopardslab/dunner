@@ -154,6 +154,7 @@ func (step Step) Exec() error {
 			Env:        step.Env,
 			WorkingDir: containerWorkingDir,
 			User:       step.User,
+			Entrypoint: []string{},
 		},
 		&container.HostConfig{
 			Mounts: append(step.ExtMounts, mount.Mount{

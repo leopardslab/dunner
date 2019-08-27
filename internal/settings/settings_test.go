@@ -1,7 +1,6 @@
 package settings
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -11,7 +10,6 @@ import (
 
 func TestInit(t *testing.T) {
 	Init()
-	fmt.Print(viper.AllSettings())
 	defaultSettings := map[string]interface{}{
 		"dunnertaskfile":   internal.DefaultDunnerTaskFileName,
 		"dotenvfile":       ".env",
