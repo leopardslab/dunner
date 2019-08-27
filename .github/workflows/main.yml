@@ -20,7 +20,9 @@ jobs:
         echo $(go env GOBIN)
         mkdir -p $(go env GOPATH)/bin
         curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-        $GOPATH/bin/dep ensure
+        ls -al
+        ls -al $(go env GOPATH)/bin
+        $(go env GOPATH)/bin/dep ensure
         make setup
         make ci
         make build
