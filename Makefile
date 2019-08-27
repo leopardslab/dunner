@@ -19,7 +19,6 @@ TEST_IMAGE_DIR="./resources/test-image/"
 GOCMD=go
 GOINSTALL=$(GOCMD) install
 GOTEST=$(GOCMD) test
-DEP=dep
 .PHONY : all install vet fmt test lint build
 
 all: build test fmt lint vet
@@ -32,7 +31,7 @@ hooks:
 	@cp $(PRECOMMIT_HOOK) ./.git/hooks/pre-commit
 
 install:
-	@$(DEP) ensure -v
+	@go build ./...
 
 build: install
 	@$(GOINSTALL) -ldflags "-X main.version=$(VERSION)-$(SHA) -s"
