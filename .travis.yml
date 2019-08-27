@@ -24,8 +24,8 @@ before_install:
   -in snap.login.enc -out snap.login -d
 
 install:
-- make setup
 - make build
+- make setup
 - sudo snap install snapcraft --classic
 
 script:
