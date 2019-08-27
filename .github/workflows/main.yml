@@ -16,8 +16,9 @@ jobs:
         go-version: '1.11.x'
     - name: Build Dunner and run unit tests
       run: |
-        echo $GOPATH
-        mkdir -p "$GOPATH/bin"
+        echo $(go env GOPATH)
+        echo $(go env GOBIN)
+        mkdir -p $(go env GOPATH)/bin
         curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
         dep ensure
         make setup
