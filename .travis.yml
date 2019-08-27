@@ -9,6 +9,7 @@ services:
 
 env:
   global:
+  - GO111MODULE=on
   - PATH=/snap/bin:$PATH
 
 addons:
