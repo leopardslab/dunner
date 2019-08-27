@@ -1,4 +1,4 @@
-name: CI
+name: Dunner CI
 
 on: [push]
 
@@ -8,27 +8,18 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macOS-latest]
-    
+
     steps:
     - uses: actions/checkout@v1
-
-    - name: Build Dunner and run tests on linux
-      if: matrix.os == 'ubuntu-latest'
+    - uses: actions/setup-go@v1
+      with:
+        go-version: '1.11.x'
+    - name: Build Dunner and run unit tests
       run: |
-        echo $GOBIN
-        echo $GOPATH
         curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
         dep ensure
-        go install
-        dunner version
-        dunner do show
-
-    - name: Build Dunner and run tests on Mac
-      if: matrix.os == 'macOS-latest'
-      run: |
-        brew install dep
-        brew upgrade dep
-        dep ensure
-        go install
+        make setup
+        make ci
+        make build
         dunner version
         dunner do show
