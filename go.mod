@@ -9,6 +9,7 @@ require (
 	github.com/docker/docker v0.0.0-20190515185722-34b56728ed71
 	github.com/docker/go-connections v0.4.0
 	github.com/docker/go-units v0.4.0
+	github.com/fatih/color v1.7.0
 	github.com/fsnotify/fsnotify v1.4.7
 	github.com/go-playground/locales v0.12.1
 	github.com/go-playground/universal-translator v0.16.0
@@ -20,6 +21,8 @@ require (
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2
 	github.com/leodido/go-urn v1.1.0
 	github.com/magiconair/properties v1.8.1
+	github.com/mattn/go-colorable v0.1.2 // indirect
+	github.com/mattn/go-isatty v0.0.9 // indirect
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/morikuni/aec v0.0.0-20170113033406-39771216ff4c
 	github.com/opencontainers/go-digest v1.0.0-rc1
@@ -29,15 +32,15 @@ require (
 	github.com/sirupsen/logrus v1.4.1
 	github.com/spf13/afero v1.2.2
 	github.com/spf13/cast v1.3.0
-	github.com/spf13/cobra v0.0.3
+	github.com/spf13/cobra v0.0.5
 	github.com/spf13/jwalterweatherman v1.1.0
 	github.com/spf13/pflag v1.0.3
 	github.com/spf13/viper v1.3.2
 	golang.org/x/net v0.0.0-20190514140710-3ec191127204
-	golang.org/x/sys v0.0.0-20190515190549-87c872767d25
+	golang.org/x/sys v0.0.0-20190813064441-fde4db37ae7a
 	golang.org/x/text v0.3.2
 	google.golang.org/genproto v0.0.0-20190513181449-d00d292a067c
 	google.golang.org/grpc v1.20.1
-	gopkg.in/go-playground/validator.v9 v9.28.0
+	gopkg.in/go-playground/validator.v9 v9.29.1
 	gopkg.in/yaml.v2 v2.2.2
 )
