@@ -10,13 +10,25 @@ jobs:
         os: [ubuntu-latest, windows-latest, macOS-latest]
 
     steps:
-    - uses: actions/setup-go@v1
+    - name: Setup Go
+      uses: actions/setup-go@v1
       with:
         go-version: '1.11.x'
-    - uses: actions/checkout@v1
+
+    - name: Debug
+      run: |
+        pwd
+        echo ${HOME}
+        echo ${GITHUB_WORKSPACE}
+        echo ${GOPATH}
+        echo ${GOROOT}
+
+    - name: Checkout Dunner
+      uses: actions/checkout@v1
       with:
         fetch-depth: 1
         path: go/src/github.com/leopardslab/dunner
+
     - name: Build Dunner and run unit tests
       env:
         GOPATH: /home/runner/go
