@@ -32,7 +32,7 @@ jobs:
 
     - name: Build Dunner and run unit tests
       env:
-        GOPATH: /home/runner/go
+        GOPATH: /home/runner/work/dunner/go
       run: |
         echo $(go env GOPATH)
         echo $(go env GOBIN)
