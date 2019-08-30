@@ -31,17 +31,31 @@ jobs:
         path: go/src/github.com/leopardslab/dunner
 
     - name: Build Dunner and run unit tests
+      if: matrix.os == 'ubuntu-latest'
       env:
         GOPATH: /home/runner/work/dunner/go
       run: |
         echo $(go env GOPATH)
         echo $(go env GOBIN)
+        mkdir -p $(go env GOPATH)/bin
         curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
         ls -al
         ls -al $(go env GOPATH)/bin
         $(go env GOPATH)/bin/dep ensure -v
         make setup
         make ci
-        make build
+        $GOPATH/bin/dunner version
+        $GOPATH/bin/dunner do show
+
+    - name: Build Dunner and run unit tests
+      if: matrix.os == 'macOS-latest'
+      env:
+        GOPATH: /home/runner/work/dunner/go
+      run: |
+        brew install dep
+        brew upgrade dep
+        dep ensure -v
+        make setup DEP=dep
+        make ci DEP=dep
         $GOPATH/bin/dunner version
         $GOPATH/bin/dunner do show

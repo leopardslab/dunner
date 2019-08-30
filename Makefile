@@ -13,6 +13,8 @@ GOCMD=go
 GOINSTALL=$(GOCMD) install
 GOTEST=$(GOCMD) test
 GOPATH=$(shell go env GOPATH)
+DEP=$(GOPATH)/bin/dep
+GOLINT=$(GOPATH)/bin/golint
 .PHONY : all install vet fmt test lint build
 
 all: build test fmt lint vet
@@ -21,7 +23,7 @@ setup: install
 	@go get -u golang.org/x/lint/golint
 
 install:
-	$(GOPATH)/bin/dep ensure -v
+	$(DEP) ensure -v
 
 build: install
 	@$(GOINSTALL) -ldflags "-X main.version=$(VERSION)-$(SHA) -s"
@@ -39,7 +41,7 @@ fmt:
 	@go fmt $(ALL_PACKAGES)
 
 lint:
-	@$(GOPATH)/bin/golint -set_exit_status $(ALL_PACKAGES)
+	@$(GOLINT) -set_exit_status $(ALL_PACKAGES)
 
 precommit: build test fmt lint vet
 
