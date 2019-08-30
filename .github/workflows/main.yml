@@ -16,7 +16,11 @@ jobs:
         GITHUB_WORKSPACE: '/home/runner/go/src/github.com/leopardslab'
       with:
         go-version: '1.11.x'
+        fetch-depth: 1
+        path: go/src/github.com/leopardslab/dunner
     - name: Build Dunner and run unit tests
+      env:
+        GOPATH: /home/runner/go
       run: |
         echo $(go env GOPATH)
         echo $(go env GOBIN)
