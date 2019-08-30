@@ -12,7 +12,7 @@ endif
 GOCMD=go
 GOINSTALL=$(GOCMD) install
 GOTEST=$(GOCMD) test
-DEP=dep
+DEP=$(go env GOPATH)/bin/dep
 .PHONY : all install vet fmt test lint build
 
 all: build test fmt lint vet
