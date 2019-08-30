@@ -12,7 +12,6 @@ endif
 GOCMD=go
 GOINSTALL=$(GOCMD) install
 GOTEST=$(GOCMD) test
-DEP=$(go env GOPATH)/bin/dep
 .PHONY : all install vet fmt test lint build
 
 all: build test fmt lint vet
@@ -21,7 +20,7 @@ setup: install
 	@go get -u golang.org/x/lint/golint
 
 install: 
-	@$(DEP) ensure -v
+	$(go env GOPATH)/bin/dep ensure -v
 
 build: install
 	@$(GOINSTALL) -ldflags "-X main.version=$(VERSION)-$(SHA) -s"
