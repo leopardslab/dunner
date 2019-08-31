@@ -30,7 +30,6 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-
 	// Verbose Mode
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "Verbose mode")
 	if err := viper.BindPFlag("Verbose", rootCmd.PersistentFlags().Lookup("verbose")); err != nil {
@@ -52,6 +51,21 @@ func init() {
 		log.Fatal(err)
 	}
 	if err := viper.BindPFlag("DotenvFile", rootCmd.PersistentFlags().Lookup("env-file")); err != nil {
+		log.Fatal(err)
+	}
+
+	// Working directory
+	rootCmd.PersistentFlags().StringP("context", "C", "./", "Working directory")
+	if err := rootCmd.MarkPersistentFlagDirname("env-file"); err != nil {
+		log.Fatal(err)
+	}
+	if err := viper.BindPFlag("WorkingDirectory", rootCmd.PersistentFlags().Lookup("context")); err != nil {
+		log.Fatal(err)
+	}
+
+	// No color output
+	rootCmd.PersistentFlags().Bool("no-color", false, "No colored output")
+	if err := viper.BindPFlag("No-color", rootCmd.PersistentFlags().Lookup("no-color")); err != nil {
 		log.Fatal(err)
 	}
 
