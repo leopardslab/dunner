@@ -44,9 +44,8 @@ jobs:
 
     - name: Build Dunner and run unit tests
       if: matrix.os == 'macOS-latest'
-      env:
-        GOPATH: /home/runner/work/dunner/go
       run: |
+        which go | xargs -L1 ls -al
         brew install dep
         dep ensure -v
         make setup DEP=dep
