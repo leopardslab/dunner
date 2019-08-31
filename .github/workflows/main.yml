@@ -47,9 +47,10 @@ jobs:
       env:
         GOPATH: /Users/runner/runners/2.157.2/work/dunner/go
       run: |
-        pwd
-        echo $GOPATH
-        which go | xargs -L1 ls -al
+        brew install docker
+        open -a Docker
+        sleep 20
+        docker stats
         brew install dep
         dep ensure -v
         make setup DEP=dep
