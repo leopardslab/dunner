@@ -47,10 +47,11 @@ jobs:
       env:
         GOPATH: /Users/runner/runners/2.157.2/work/dunner/go
       run: |
-        brew install docker
-        open -a Docker
-        sleep 20
-        docker stats
+        brew install docker docker-machine
+        brew services start docker-machine
+        docker-machine create --driver virtualbox default
+        eval "$(docker-machine env default)"
+        docker ps
         brew install dep
         dep ensure -v
         make setup DEP=dep
