@@ -24,11 +24,12 @@ jobs:
     - name: Debug
       run: |
         pwd
-        echo %HOME%
-        echo %GITHUB_WORKSPACE%
-        echo %GOPATH%
-        echo %GOROOT%
-        ls %GOPATH%
+        echo home: %HOME%
+        echo workspace: %GITHUB_WORKSPACE%
+        echo gopath: %GOPATH%
+        echo goroot: %GOROOT%
+        ls gopathls: %GOPATH%
+        go env GOPATH
 
     - name: Build Dunner and run unit tests
       if: matrix.os == 'ubuntu-latest'
@@ -65,7 +66,7 @@ jobs:
     - name: Build Dunner and run unit tests
       if: matrix.os == 'windows-latest'
       env:
-        GOPATH: \home/runner/work/dunner/go
+        GOPATH: /d/a/dunner/go
       run: |
         mkdir -p $(go env GOPATH)\bin
         curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
