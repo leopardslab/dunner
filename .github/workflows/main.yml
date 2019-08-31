@@ -67,14 +67,12 @@ jobs:
     - name: Build Dunner and run unit tests
       if: matrix.os == 'windows-latest'
       env:
-        GOPATH: C:\Users\runneradmin\go
+        GOPATH: d:\a\dunner\go\
       run: |
         mkdir -p $(go env GOPATH)\bin
         choco install dep
-        dep version
-        curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-        %GOPATH%\bin\dep ensure -v
+        dep ensure -v
         make setup DEP=dep
         make ci DEP=dep
-        $GOPATH\bin\dunner version
-        $GOPATH\bin\dunner do show
+        %GOPATH%\bin\dunner version
+        %GOPATH%\bin\dunner do show
