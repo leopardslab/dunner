@@ -55,3 +55,15 @@ jobs:
         make ci DEP=dep
         $GOPATH/bin/dunner version
         $GOPATH/bin/dunner do show
+
+
+    - name: Build Dunner and run unit tests
+      if: matrix.os == 'windows-latest'
+      env:
+        GOPATH: /home/runner/work/dunner/go
+      run: |
+        dep ensure -v
+        make setup DEP=dep
+        make ci DEP=dep
+        $GOPATH/bin/dunner version
+        $GOPATH/bin/dunner do show
