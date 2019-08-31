@@ -8,26 +8,27 @@ jobs:
     strategy:
       matrix:
         # os: [ubuntu-latest, windows-latest, macOS-latest]
-        os: [ubuntu-latest, windows-latest]
+        os: [windows-latest]
     steps:
     - name: Setup Go
       uses: actions/setup-go@v1
       with:
         go-version: '1.11.x'
 
-    - name: Debug
-      run: |
-        pwd
-        echo ${HOME}
-        echo ${GITHUB_WORKSPACE}
-        echo ${GOPATH}
-        echo ${GOROOT}
-
     - name: Checkout Dunner
       uses: actions/checkout@v1
       with:
         fetch-depth: 1
         path: go/src/github.com/leopardslab/dunner
+
+    - name: Debug
+      run: |
+        pwd
+        echo %HOME%
+        echo %GITHUB_WORKSPACE%
+        echo %GOPATH%
+        echo %GOROOT%
+        ls %GOPATH%
 
     - name: Build Dunner and run unit tests
       if: matrix.os == 'ubuntu-latest'
@@ -64,12 +65,12 @@ jobs:
     - name: Build Dunner and run unit tests
       if: matrix.os == 'windows-latest'
       env:
-        GOPATH: /home/runner/work/dunner/go
+        GOPATH: \home/runner/work/dunner/go
       run: |
-        mkdir -p $(go env GOPATH)/bin
+        mkdir -p $(go env GOPATH)\bin
         curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
         $(go env GOPATH)/bin/dep ensure -v
         make setup DEP=dep
         make ci DEP=dep
-        $GOPATH/bin/dunner version
-        $GOPATH/bin/dunner do show
+        $GOPATH\bin\dunner version
+        $GOPATH\bin\dunner do show
