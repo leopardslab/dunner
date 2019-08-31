@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/leopardslab/dunner/internal"
@@ -77,13 +78,13 @@ func TestInitializeFilenameIsInvalid(t *testing.T) {
 	defer revert()
 	var filename = "#Q$EJL_doesntexist/.test_dunner.yml"
 
-	expected := fmt.Sprintf("open %s: no such file or directory", filename)
+	expected := fmt.Sprintf("open %s: ", filename)
 	err := InitProject(filename)
 	if err == nil {
-		t.Errorf("expected: %s, got nil", expected)
+		t.Errorf("expected error prefix: %s, got nil", expected)
 	}
-	if expected != err.Error() {
-		t.Errorf("expected: %s, got: %s", expected, err.Error())
+	if !strings.HasPrefix(err.Error(), expected) {
+		t.Errorf("expected prefix: %s, got: %s", expected, err.Error())
 	}
 }
 

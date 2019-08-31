@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -294,8 +295,8 @@ var lookupEnvtests = []struct {
 	{"/foo/`$bar", "/foo/`$bar", nil},
 	{util.HomeDir, util.HomeDir, nil},
 	{"`$HOME`", util.HomeDir, nil},
-	{"`$HOME`/foo", util.HomeDir + "/foo", nil},
-	{"`$HOME`/foo/`$HOME`", util.HomeDir + "/foo/" + util.HomeDir, nil},
+	{"`$HOME`/foo", filepath.Join(util.HomeDir, "foo"), nil},
+	{"`$HOME`/foo`$HOME`", filepath.Join(util.HomeDir, "foo", util.HomeDir), nil},
 	{"`$INVALID_TEST`/foo", "`$INVALID_TEST`/foo", fmt.Errorf("could not find environment variable 'INVALID_TEST'")},
 }
 
