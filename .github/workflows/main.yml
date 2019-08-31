@@ -8,7 +8,7 @@ jobs:
     strategy:
       matrix:
         # os: [ubuntu-latest, windows-latest, macOS-latest]
-        os: [macOS-latest]
+        os: [ubuntu-latest, windows-latest]
     steps:
     - name: Setup Go
       uses: actions/setup-go@v1
