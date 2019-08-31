@@ -7,8 +7,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macOS-latest]
-
+        # os: [ubuntu-latest, windows-latest, macOS-latest]
+        os: [macOS-latest]
     steps:
     - name: Setup Go
       uses: actions/setup-go@v1
@@ -45,8 +45,10 @@ jobs:
     - name: Build Dunner and run unit tests
       if: matrix.os == 'macOS-latest'
       env:
-        GOPATH: go
+        GOPATH: /Users/runner/runners/2.157.2/work/dunner/go
       run: |
+        pwd
+        echo $GOPATH
         which go | xargs -L1 ls -al
         brew install dep
         dep ensure -v
