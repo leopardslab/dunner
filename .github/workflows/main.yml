@@ -70,8 +70,10 @@ jobs:
         GOPATH: C:\Users\runneradmin\go
       run: |
         mkdir -p $(go env GOPATH)\bin
+        choco install dep
+        dep version
         curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-        $(go env GOPATH)/bin/dep ensure -v
+        %GOPATH%\bin\dep ensure -v
         make setup DEP=dep
         make ci DEP=dep
         $GOPATH\bin\dunner version
