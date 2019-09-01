@@ -73,6 +73,7 @@ jobs:
         choco install dep
         dep ensure -v
         make setup DEP=dep
-        make ci DEP=dep
+        make fmt lint vet
+        go test -v ./...
         %GOPATH%\bin\dunner version
         %GOPATH%\bin\dunner do show
