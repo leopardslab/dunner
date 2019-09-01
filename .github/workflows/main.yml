@@ -7,8 +7,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # os: [ubuntu-latest, windows-latest, macOS-latest]
-        os: [windows-latest]
+        os: [ubuntu-latest, windows-latest, macOS-latest]
     steps:
     - name: Setup Go
       uses: actions/setup-go@v1
@@ -49,17 +48,13 @@ jobs:
       if: matrix.os == 'macOS-latest'
       env:
         GOPATH: /Users/runner/runners/2.157.2/work/dunner/go
+      # Not running unit tests in mac since there is no docker support
       run: |
-        brew install docker docker-machine
-        brew services start docker-machine
-        brew cask install virtualbox
-        docker-machine create --driver virtualbox default
-        eval "$(docker-machine env default)"
-        docker ps
         brew install dep
         dep ensure -v
         make setup DEP=dep
-        make ci DEP=dep
+        make fmt lint vet
+        make install
         $GOPATH/bin/dunner version
         $GOPATH/bin/dunner do show
 
@@ -69,12 +64,11 @@ jobs:
       env:
         GOPATH: d:\a\dunner\go\
       run: |
-        docker version
         mkdir -p $(go env GOPATH)\bin
         choco install dep
         dep ensure -v
         make setup DEP=dep
         make fmt lint vet
         go test -v ./...
-        %GOPATH%\bin\dunner version
-        %GOPATH%\bin\dunner do show
+        %GOPATH%bin\dunner version
+        %GOPATH%bin\dunner do show
