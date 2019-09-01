@@ -69,6 +69,7 @@ jobs:
       env:
         GOPATH: d:\a\dunner\go\
       run: |
+        docker version
         mkdir -p $(go env GOPATH)\bin
         choco install dep
         dep ensure -v
