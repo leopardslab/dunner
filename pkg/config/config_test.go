@@ -219,7 +219,7 @@ func TestConfigs_ValidateWithValidMountDirectory(t *testing.T) {
 	if len(r.FindStringSubmatch(wd)) != 0 {
 		drive = r.FindStringSubmatch(wd)[1]
 		suffix := strings.TrimLeft(wd, fmt.Sprintf("%s:", drive))
-		wd = fmt.Sprintf("\\\\%s%s", strings.ToLower(drive), suffix)
+		wd = fmt.Sprintf("/%s%s", strings.ToLower(drive), strings.Replace(suffix, `\`, `/`, -1))
 	}
 	fmt.Println(wd)
 
@@ -397,8 +397,8 @@ var lookupEnvtests = []struct {
 	{"/foo/bar", "/foo/bar", nil},
 	{"/foo/`$bar", "/foo/`$bar", nil},
 	{"`$DUNNER_TEST_ENV`", dummyEnvValue, nil},
-	{"`$DUNNER_TEST_ENV`/foo", filepath.Join(dummyEnvValue, "foo"), nil},
-	{"`$DUNNER_TEST_ENV`/foo/`$DUNNER_TEST_ENV`", filepath.Join(dummyEnvValue, "foo", dummyEnvValue), nil},
+	{"`$DUNNER_TEST_ENV`/foo", fmt.Sprintf("%s/foo", dummyEnvValue), nil},
+	{"`$DUNNER_TEST_ENV`/foo/`$DUNNER_TEST_ENV`", fmt.Sprintf("%s/foo/%s", dummyEnvValue, dummyEnvValue), nil},
 	{"`$INVALID_TEST`/foo", "`$INVALID_TEST`/foo", fmt.Errorf("could not find environment variable 'INVALID_TEST'")},
 }
 
