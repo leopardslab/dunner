@@ -219,7 +219,7 @@ func TestConfigs_ValidateWithValidMountDirectory(t *testing.T) {
 	if len(r.FindStringSubmatch(wd)) != 0 {
 		drive = r.FindStringSubmatch(wd)[1]
 		suffix := strings.TrimLeft(wd, fmt.Sprintf("%s:", drive))
-		wd = fmt.Sprintf("/%s%s", strings.ToLower(drive), strings.Replace(suffix, `\`, `/`, -1))
+		wd = fmt.Sprintf("//%s%s", strings.ToLower(drive), strings.Replace(suffix, `\`, `/`, -1))
 	}
 	fmt.Println(wd)
 
