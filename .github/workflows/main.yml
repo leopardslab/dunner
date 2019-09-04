@@ -67,7 +67,7 @@ jobs:
         dep ensure -v
         make setup DEP=dep
         make fmt lint vet
-        make install
+        make install DEP=dep
         $GOPATH/bin/dunner version
         $GOPATH/bin/dunner do show
 
