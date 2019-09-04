@@ -33,7 +33,7 @@ hooks:
 	@cp $(PRECOMMIT_HOOK) ./.git/hooks/pre-commit
 
 install:
-	@$(DEP) ensure -v
+	@go build ./...
 
 build: install
 	@$(GOINSTALL) -ldflags "-X main.version=$(VERSION)-$(SHA) -s"
