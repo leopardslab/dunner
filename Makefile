@@ -12,7 +12,6 @@ GO_FILES=$(ALL_PACKAGES)
 
 #Hooks
 PRECOMMIT_HOOK="./resources/git-hooks/pre-commit"
-
 TEST_IMAGE_DIR="./resources/test-image/"
 
 #Go parameters
