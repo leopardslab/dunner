@@ -60,7 +60,7 @@ jobs:
     - name: Build Dunner and run unit tests
       if: matrix.os == 'macOS-latest'
       env:
-        GOPATH: /Users/runner/runners/2.157.2/work/dunner/go
+        GOPATH: /Users/runner/runners/2.157.3/work/dunner/go # FIXME: Remove this hard coded path value
       # Not running unit tests in mac since there is no docker support
       run: |
         brew install dep
