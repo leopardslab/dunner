@@ -161,6 +161,7 @@ func (step Step) Exec() error {
 				Source: path,
 				Target: hostMountTarget,
 			}),
+			AutoRemove: true,
 		},
 		nil, "")
 	if err != nil {
@@ -173,17 +174,9 @@ func (step Step) Exec() error {
 		}
 	}
 
-	defer func(containerID string) {
-		if err := cli.ContainerRemove(ctx, containerID, types.ContainerRemoveOptions{}); err != nil {
-			log.Fatal(err)
-		}
-
-	}(resp.ID)
-
 	if err = cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
 		log.Fatal(err)
 	}
-
 	defer func() {
 		dur, err := time.ParseDuration("-1ns") // Negative duration means no force termination
 		if err != nil {
