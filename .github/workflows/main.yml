@@ -21,6 +21,7 @@ jobs:
         path: go/src/github.com/leopardslab/dunner
 
     - name: Debug
+      if: matrix.os == 'windows-latest'
       run: |
         pwd
         echo home: %HOME%
@@ -29,6 +30,18 @@ jobs:
         echo goroot: %GOROOT%
         go env GOPATH
         ls %GOPATH%
+        ls -l
+
+    - name: Debug
+      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macOS-latest'
+      run: |
+        pwd
+        echo $HOME
+        echo $GITHUB_WORKSPACE
+        echo $GOPATH
+        echo $GOROOT
+        go env GOPATH
+        ls $GOPATH
         ls -l
 
     - name: Build Dunner and run unit tests
