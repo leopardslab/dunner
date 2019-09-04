@@ -61,7 +61,7 @@ jobs:
         $GOPATH/bin/dunner version
         $GOPATH/bin/dunner do show
 
-
+    # Not using make ci in windows because test-image is not working for windows as busybox image is not available
     - name: Build Dunner and run unit tests
       if: matrix.os == 'windows-latest'
       run: |
