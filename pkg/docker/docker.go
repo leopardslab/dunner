@@ -177,7 +177,6 @@ func (step Step) Exec() error {
 	if err = cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
 		log.Fatal(err)
 	}
-
 	defer func() {
 		dur, err := time.ParseDuration("-1ns") // Negative duration means no force termination
 		if err != nil {
