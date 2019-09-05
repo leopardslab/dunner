@@ -53,7 +53,7 @@ jobs:
 
     - name: Build Dunner and run unit tests
       if: matrix.os == 'macOS-latest'
-      # Not running unit tests in mac since there is no docker support
+      # Not running unit tests in mac since there is no docker support via github actions
       run: |
         make setup
         make fmt lint vet
