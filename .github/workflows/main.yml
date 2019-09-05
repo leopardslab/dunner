@@ -48,18 +48,17 @@ jobs:
       run: |
         make setup
         make ci
-        $GOPATH/bin/dunner version
-        $GOPATH/bin/dunner do show
+        $(go env GOPATH)/bin/dunner version
+        $(go env GOPATH)/bin/dunner do show
 
     - name: Build Dunner and run unit tests
       if: matrix.os == 'macOS-latest'
       # Not running unit tests in mac since there is no docker support via github actions
       run: |
         make setup
-        make fmt lint vet
-        make install
-        $GOPATH/bin/dunner version
-        $GOPATH/bin/dunner do show
+        make fmt lint vet install
+        $(go env GOPATH)/bin/dunner version
+        $(go env GOPATH)/bin/dunner do show
 
     # Not using make ci in windows because test-image is not working for windows as busybox image is not available
     - name: Build Dunner and run unit tests

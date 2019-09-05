@@ -436,11 +436,10 @@ func TestDecodeMount(t *testing.T) {
 	}
 }
 
-func TestDecodeMountWithEnvironmentVariable(t *testing.T) {
-	os.Setenv(dummyEnvName, dummyEnvValue)
+func TestDecodeMountWithRelativeSource(t *testing.T) {
 	absEnv, _ := filepath.Abs(dummyEnvValue)
 	step := &docker.Step{}
-	mounts := []string{fmt.Sprintf("`$%s`:`$%s`", dummyEnvName, dummyEnvName)}
+	mounts := []string{fmt.Sprintf("%s:%s", dummyEnvValue, dummyEnvValue)}
 
 	err := DecodeMount(mounts, step)
 
