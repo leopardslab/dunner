@@ -458,6 +458,7 @@ func TestDecodeMountWithEnvironmentVariable(t *testing.T) {
 	}
 	if (*step).ExtMounts[0].Target != dummyEnvValue {
 		t.Fatalf("expected ExtMounts Source to be %s, got %s", dummyEnvValue, (*step).ExtMounts[0].Target)
+	}
 }
 
 func TestDecodeMountWithShorthandHomeDir(t *testing.T) {
