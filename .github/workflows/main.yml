@@ -23,25 +23,17 @@ jobs:
       if: matrix.os == 'windows-latest'
       run: |
         pwd
-        echo home: %HOME%
-        echo workspace: %GITHUB_WORKSPACE%
         echo gopath: %GOPATH%
-        echo goroot: %GOROOT%
         go env GOPATH
         ls %GOPATH%
-        ls -l
 
     - name: Debug
       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macOS-latest'
       run: |
         pwd
-        echo $HOME
-        echo $GITHUB_WORKSPACE
         echo $GOPATH
-        echo $GOROOT
         go env GOPATH
         ls $GOPATH
-        ls -l
 
     - name: Build Dunner and run unit tests
       if: matrix.os == 'ubuntu-latest'
