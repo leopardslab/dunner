@@ -1,6 +1,8 @@
 package settings
 
 import (
+	"github.com/leopardslab/dunner/internal"
+
 	"github.com/spf13/viper"
 )
 
@@ -21,15 +23,20 @@ func Init() {
 	viper.AutomaticEnv()
 
 	// Files
-	viper.SetDefault("DunnerTaskFile", ".dunner.yaml")
+	viper.SetDefault("DunnerTaskFile", internal.DefaultDunnerTaskFileName)
 	viper.SetDefault("DotenvFile", ".env")
 	viper.SetDefault("GlobalLogFile", "/var/log/dunner/logs/")
 	viper.SetDefault("LocalLogFile", nil)
+
+	// Working Directory
+	viper.SetDefault("WorkingDirectory", "./")
 
 	// Modes
 	viper.SetDefault("Async", false)
 	viper.SetDefault("Verbose", false)
 	viper.SetDefault("Dry-run", false)
+	viper.SetDefault("No-color", false)
+	viper.SetDefault("Force-pull", false)
 
 	// Constants
 	viper.SetDefault("DockerAPIVersion", "1.39")

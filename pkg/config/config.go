@@ -20,7 +20,7 @@ You can use the library by creating a dunner task file. For example,
 		commands:
 		  - ["mvn", "package"]
 
-Use `GetConfigs` method to parse the dunner task file, and `ParseEnv` method to parse environment variables file, or
+Use `GetConfigs` method to parse the dunner task file, and `ParseEnvs` method to parse environment variables file, or
 the host environment variables. The environment variables are used by invoking in the task file using backticks(`$var`).
 */
 package config
@@ -40,17 +40,20 @@ import (
 	"github.com/go-playground/locales/en"
 	ut "github.com/go-playground/universal-translator"
 	"github.com/joho/godotenv"
+	"github.com/leopardslab/dunner/internal"
 	"github.com/leopardslab/dunner/internal/logger"
 	"github.com/leopardslab/dunner/internal/util"
 	"github.com/leopardslab/dunner/pkg/docker"
 	"github.com/spf13/viper"
-	"gopkg.in/go-playground/validator.v9"
+	validator "gopkg.in/go-playground/validator.v9"
 	en_translations "gopkg.in/go-playground/validator.v9/translations/en"
 	yaml "gopkg.in/yaml.v2"
 )
 
 var log = logger.Log
 var dotEnv map[string]string
+var hostDirpattern = "`\\$(?P<name>[^`]+)`"
+var hostDirRegex = regexp.MustCompile(hostDirpattern)
 
 var (
 	uni                     *ut.UniversalTranslator
@@ -86,42 +89,10 @@ var customValidations = []customValidation{
 		translation:  "mount directory '{0}' is invalid. Check if source directory path exists.",
 		validationFn: ParseMountDir,
 	},
-}
-
-// Task describes a single task to be run in a docker container
-type Task struct {
-	// Name given as string to identify the task
-	Name string `yaml:"name"`
-
-	// Image is the repo name on which Docker containers are built
-	Image string `yaml:"image" validate:"required"`
-
-	// SubDir is the primary directory on which task is to be run
-	SubDir string `yaml:"dir"`
-
-	// The command which runs on the container and exits
-	Command []string `yaml:"command" validate:"omitempty,dive,required"`
-
-	// The list of commands that are to be run in sequence
-	Commands [][]string `yaml:"commands" validate:"omitempty,dive,omitempty,dive,required"`
-
-	// The list of environment variables to be exported inside the container
-	Envs []string `yaml:"envs"`
-
-	// The directories to be mounted on the container as bind volumes
-	Mounts []string `yaml:"mounts" validate:"omitempty,dive,min=1,mountdir,parsedir"`
-
-	// The next task that must be executed if this does go successfully
-	Follow string `yaml:"follow" validate:"omitempty,follow_exist"`
-
-	// The list of arguments that are to be passed
-	Args []string `yaml:"args"`
-}
-
-// Configs describes the parsed information from the dunner file. It is a map of task name as keys and the list of tasks
-// associated with it.
-type Configs struct {
-	Tasks map[string][]Task `validate:"required,min=1,dive,keys,required,endkeys,required,min=1,required"`
+	{
+		tag:         "required_without",
+		translation: "image is required, unless the task has a `follow` field",
+	},
 }
 
 // Validate validates config and returns errors.
@@ -134,10 +105,12 @@ func (configs *Configs) Validate() []error {
 	errs := formatErrors(valErrs, "")
 	ctx := context.WithValue(context.Background(), configsKey, configs)
 
-	// Each task is validated separately so that task name can be added in error messages
-	for taskName, tasks := range configs.Tasks {
-		taskValErrs := govalidator.VarCtx(ctx, tasks, "dive")
-		errs = append(errs, formatErrors(taskValErrs, taskName)...)
+	// Each step is validated separately so that task name can be added in error messages
+	for taskName, task := range configs.Tasks {
+		for _, steps := range task.Steps {
+			taskValErrs := govalidator.VarCtx(ctx, steps, "dive")
+			errs = append(errs, formatErrors(taskValErrs, taskName)...)
+		}
 	}
 	return errs
 }
@@ -182,11 +155,13 @@ func initValidator(customValidations []customValidation) error {
 
 	// Register Custom validators and translations
 	for _, t := range customValidations {
-		err := govalidator.RegisterValidationCtx(t.tag, t.validationFn)
-		if err != nil {
-			return fmt.Errorf("failed to register validation: %s", err.Error())
+		if t.validationFn != nil {
+			err := govalidator.RegisterValidationCtx(t.tag, t.validationFn)
+			if err != nil {
+				return fmt.Errorf("failed to register validation: %s", err.Error())
+			}
 		}
-		err = govalidator.RegisterTranslation(t.tag, trans, registrationFunc(t.tag, t.translation), translateFunc)
+		err := govalidator.RegisterTranslation(t.tag, trans, registrationFunc(t.tag, t.translation), translateFunc)
 		if err != nil {
 			return fmt.Errorf("failed to register translations: %s", err.Error())
 		}
@@ -248,22 +223,57 @@ func ParseMountDir(ctx context.Context, fl validator.FieldLevel) bool {
 // The default filename that is being read by Dunner during the time of execution is `dunner.yaml`,
 // but it can be changed using `--task-file` flag in the CLI.
 func GetConfigs(filename string) (*Configs, error) {
-	fileContents, err := ioutil.ReadFile(filename)
+	taskFile, err := getDunnerTaskFile(filename)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
+	}
+
+	fileContents, err := ioutil.ReadFile(taskFile)
+	if err != nil {
+		return nil, err
 	}
 
 	var configs Configs
-	if err := yaml.Unmarshal(fileContents, &configs.Tasks); err != nil {
-		log.Fatal(err)
+	if err := yaml.Unmarshal(fileContents, &configs); err != nil {
+		return nil, err
 	}
 
 	loadDotEnv()
-	if err := ParseEnv(&configs); err != nil {
-		log.Fatal(err)
+	if err := ParseEnvs(&configs); err != nil {
+		return nil, err
 	}
 
 	return &configs, nil
+}
+
+// getDunnerTaskFile returns the dunner task file path.
+// If `filename` is not default task file, it returns as-is.
+// It returns task file in current directory if exists
+// this routine keeps going upwards searching for task file
+func getDunnerTaskFile(filename string) (string, error) {
+	if internal.DefaultDunnerTaskFileName != filename {
+		return filename, nil
+	}
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	failErr := fmt.Errorf("failed to find Dunner task file")
+
+	for {
+		taskFile := filepath.Join(dir, internal.DefaultDunnerTaskFileName)
+		if util.FileExists(taskFile) {
+			return taskFile, nil
+		}
+		if dir == filepath.Clean(fmt.Sprintf("%c", os.PathSeparator)) || dir == "" {
+			return "", failErr
+		}
+		oldDir := dir
+		dir = filepath.Clean(fmt.Sprintf("%s%c..", dir, os.PathSeparator))
+		if dir == oldDir {
+			return "", failErr
+		}
+	}
 }
 
 func loadDotEnv() {
@@ -271,66 +281,120 @@ func loadDotEnv() {
 	var err error
 	dotEnv, err = godotenv.Read(file)
 	if err != nil {
-		log.Warn(err)
+		log.Infof("No environment loaded from %s file: Not found", file)
 	}
 }
 
-// ParseEnv parses the `.env` file as well as the host environment variables.
+// ParseEnvs parses the `.env` file as well as the host environment variables.
 // If the same variable is defined in both the `.env` file and in the host environment,
 // priority is given to the .env file.
 //
 // Note: You can change the filename of environment file (default: `.env`) using `--env-file/-e` flag in the CLI.
-func ParseEnv(configs *Configs) error {
+func ParseEnvs(configs *Configs) error {
+
+	// Parse envs that are global to all
+	for i, envVar := range (*configs).Envs {
+		newEnv, err := obtainEnv(envVar)
+		if err != nil {
+			return err
+		}
+		(*configs).Envs[i] = newEnv
+	}
 	for k, tasks := range (*configs).Tasks {
-		for j, task := range tasks {
-			for i, envVar := range task.Envs {
-				var str = strings.Split(envVar, "=")
-				if len(str) != 2 {
-					return fmt.Errorf(
-						`config: invalid format of environment variable: %v`,
-						envVar,
-					)
-				}
-				var pattern = "^`\\$.+`$"
-				check, err := regexp.MatchString(pattern, str[1])
+
+		// Parse envs that are global to all steps of 'k' task
+		for i, envVar := range tasks.Envs {
+			newEnv, err := obtainEnv(envVar)
+			if err != nil {
+				return err
+			}
+			(*configs).Tasks[k].Envs[i] = newEnv
+		}
+
+		for j, step := range tasks.Steps {
+
+			// Parse envs that are defined for an individual step
+			for i, envVar := range step.Envs {
+				newEnv, err := obtainEnv(envVar)
 				if err != nil {
-					log.Fatal(err)
+					return err
 				}
-				if check {
-					var key = strings.Replace(
-						strings.Replace(
-							str[1],
-							"`",
-							"",
-							-1,
-						),
-						"$",
-						"",
-						1,
-					)
-					var val string
-					// Value of variable defined in environment file (default '.env') overrides
-					// the value defined in host's environment variables.
-					if v, isSet := os.LookupEnv(key); isSet {
-						val = v
-					}
-					if v, isSet := dotEnv[key]; isSet {
-						val = v
-					}
-					if val == "" {
-						return fmt.Errorf(
-							`config: could not find environment variable '%v' in %s file or among host environment variables`,
-							key,
-							viper.GetString("DotenvFile"),
-						)
-					}
-					var newEnv = str[0] + "=" + val
-					(*configs).Tasks[k][j].Envs[i] = newEnv
-				}
+				(*configs).Tasks[k].Steps[j].Envs[i] = newEnv
 			}
 		}
 	}
 
+	return nil
+}
+
+func obtainEnv(envVar string) (string, error) {
+	var str = strings.Split(envVar, "=")
+	if len(str) != 2 {
+		return "", fmt.Errorf(
+			`config: invalid format of environment variable: %v`,
+			envVar,
+		)
+	}
+	var pattern = "^`\\$.+`$"
+	check, err := regexp.MatchString(pattern, str[1])
+	if err != nil {
+		log.Fatal(err)
+	}
+	if check {
+		var key = strings.Replace(
+			strings.Replace(
+				str[1],
+				"`",
+				"",
+				-1,
+			),
+			"$",
+			"",
+			1,
+		)
+		var val string
+		// Value of variable defined in environment file (default '.env') overrides
+		// the value defined in host's environment variables.
+		if v, isSet := os.LookupEnv(key); isSet {
+			val = v
+		}
+		if v, isSet := dotEnv[key]; isSet {
+			val = v
+		}
+		if val == "" {
+			return "", fmt.Errorf(
+				`config: could not find environment variable '%v' in %s file or among host environment variables`,
+				key,
+				viper.GetString("DotenvFile"),
+			)
+		}
+		var newEnv = str[0] + "=" + val
+		return newEnv, nil
+	}
+	return envVar, nil
+}
+
+// ParseStepEnv parses Dir, Mounts, User fields of Step by replacing environment variables with their values
+func (step *Step) ParseStepEnv() error {
+	parsedDir, err := lookupDirectory(step.Dir)
+	if err != nil {
+		return err
+	}
+	step.Dir = parsedDir
+
+	for index, m := range step.Mounts {
+		parsedMount, err := lookupDirectory(m)
+		if err != nil {
+			return err
+		}
+		step.Mounts[index] = parsedMount
+	}
+
+	parsedUser, err := lookupDirectory(step.User)
+	if err != nil {
+		return err
+	}
+	step.User = parsedUser
 	return nil
 }
 
@@ -350,15 +414,7 @@ func DecodeMount(mounts []string, step *docker.Step) error {
 				readOnly = false
 			}
 		}
-		parsedSrcDir, err := lookupDirectory(arr[0])
-		if err != nil {
-			return err
-		}
-		parsedDestDir, err := lookupDirectory(arr[1])
-		if err != nil {
-			return err
-		}
-		src, err := filepath.Abs(joinPathRelToHome(parsedSrcDir))
+		src, err := filepath.Abs(joinPathRelToHome(arr[0]))
 		if err != nil {
 			return err
 		}
@@ -366,7 +422,7 @@ func DecodeMount(mounts []string, step *docker.Step) error {
 		(*step).ExtMounts = append((*step).ExtMounts, mount.Mount{
 			Type:     mount.TypeBind,
 			Source:   src,
-			Target:   parsedDestDir,
+			Target:   arr[1],
 			ReadOnly: readOnly,
 		})
 	}
@@ -375,8 +431,6 @@ func DecodeMount(mounts []string, step *docker.Step) error {
 
 // Replaces dir having any environment variables in form `$ENV_NAME` and returns a parsed string
 func lookupDirectory(dir string) (string, error) {
-	hostDirpattern := "`\\$(?P<name>[^`]+)`"
-	hostDirRegex := regexp.MustCompile(hostDirpattern)
 	matches := hostDirRegex.FindAllStringSubmatch(dir, -1)
 
 	parsedDir := dir
@@ -390,7 +444,7 @@ func lookupDirectory(dir string) (string, error) {
 			val = v
 		}
 		if val == "" {
-			return dir, fmt.Errorf(`could not find environment variable '%v'`, envKey)
+			return dir, fmt.Errorf("could not find environment variable '%v'", envKey)
 		}
 		parsedDir = strings.Replace(parsedDir, fmt.Sprintf("`$%s`", envKey), val, -1)
 	}

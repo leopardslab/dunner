@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/leopardslab/dunner/internal/logger"
 	"github.com/leopardslab/dunner/pkg/config"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -24,6 +25,7 @@ var validateCmd = &cobra.Command{
 
 // Validate command invoked from command line, validates the dunner task file. If there are errors, it fails with non-zero exit code.
 func Validate(_ *cobra.Command, args []string) {
+	logger.InitColorOutput()
 	var dunnerFile = viper.GetString("DunnerTaskFile")
 
 	configs, err := config.GetConfigs(dunnerFile)
@@ -35,7 +37,7 @@ func Validate(_ *cobra.Command, args []string) {
 	if len(errs) != 0 {
 		fmt.Println("Validation failed with following errors:")
 		for _, err := range errs {
-			fmt.Println(err.Error())
+			logger.ErrorOutput(err.Error())
 		}
 		os.Exit(1)
 	}

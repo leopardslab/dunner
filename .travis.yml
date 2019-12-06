@@ -9,7 +9,7 @@ services:
 
 env:
   global:
-  - DEP_VERSION="0.5.0"
+  - GO111MODULE=on
   - PATH=/snap/bin:$PATH
 
 addons:
@@ -23,11 +23,9 @@ before_install:
 - rpmbuild --version
 - openssl aes-256-cbc -K $encrypted_12c8071d2874_key -iv $encrypted_12c8071d2874_iv
   -in snap.login.enc -out snap.login -d
-- curl -L -s https://github.com/golang/dep/releases/download/v${DEP_VERSION}/dep-linux-amd64
-  -o $GOPATH/bin/dep
-- chmod +x $GOPATH/bin/dep
 
 install:
+- make build
 - make setup
 - sudo snap install snapcraft --classic
 
@@ -52,7 +50,17 @@ deploy:
 
 - provider: script
   skip_cleanup: true
-  script: bash release/publish_rpm_to_bintray.sh
+  script: curl -sL https://git.io/goreleaser | bash -s -- --rm-dist --skip-publish
+  verbose: true
+  on:
+    condition: "$TRAVIS_OS_NAME = linux"
+    branch:
+      - /^release\/.*$/
+    go: 1.11.x
+
+- provider: script
+  skip_cleanup: true
+  script: bash release/publish_deb_to_bintray.sh
   verbose: true
   on:
     tags: true
@@ -62,7 +70,7 @@ deploy:
 
 - provider: script
   skip_cleanup: true
-  script: bash release/publish_deb_to_bintray.sh
+  script: bash release/publish_rpm_to_bintray.sh
   verbose: true
   on:
     tags: true

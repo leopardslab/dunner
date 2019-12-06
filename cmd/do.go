@@ -21,6 +21,12 @@ func init() {
 		log.Fatal(err)
 	}
 
+	// Force-pull
+	doCmd.Flags().Bool("force-pull", false, "Force pulling of images from Docker Hub")
+	if err := viper.BindPFlag("Force-pull", doCmd.Flags().Lookup("force-pull")); err != nil {
+		log.Fatal(err)
+	}
+
 }
 
 var doCmd = &cobra.Command{
