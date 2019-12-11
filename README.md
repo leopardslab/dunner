@@ -58,7 +58,7 @@ and [more](https://github.com/leopardslab/dunner/wiki/User-Guide)...
 
 # Getting Started
 
-Read more about [Why Dunner](https://github.com/leopardslab/dunner/wiki/Introduction-to-Dunner) and refer our guides for installation and usage.
+Read more about [Why Dunner](https://github.com/leopardslab/dunner/wiki/Introduction-to-Dunner) and refer our guides for [installation](https://github.com/leopardslab/Dunner/wiki/Installation-Guide) and [usage](https://github.com/leopardslab/dunner/wiki/User-Guide).
 
 | [**User Documentation**](https://github.com/leopardslab/dunner/wiki/User-Guide)     | [**Installation Guide**](https://github.com/leopardslab/dunner/wiki/Installation-Guide)     | [**Dunner Examples**](https://github.com/leopardslab/dunner-cookbook)           | [**Contributing**](https://github.com/leopardslab/dunner/wiki/Developer-Guide)           | [**Dunner GoCD Plugin**](https://github.com/leopardslab/dunner-gocd-plugin#dunner-gocd-plugin)           | 
 |:-------------------------------------:|:-------------------------------:|:-----------------------------------:|:---------------------------------------------:| :--------------------------------------:|
