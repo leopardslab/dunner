@@ -1,5 +1,4 @@
 # Dunner
-
 [![logo](https://user-images.githubusercontent.com/41909955/71305232-60cea780-2385-11ea-9b53-7f6e3e5c9e79.png)]
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/b2275e331d2745dc9527d45efbbf2da2)](https://app.codacy.com/app/Leopardslab/dunner?utm_source=github.com&utm_medium=referral&utm_content=leopardslab/dunner&utm_campaign=Badge_Grade_Dashboard)
 [![Codecov branch](https://img.shields.io/codecov/c/github/leopardslab/dunner/master.svg?style=for-the-badge)](https://codecov.io/gh/leopardslab/dunner)
