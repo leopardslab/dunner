@@ -12,13 +12,15 @@ GO_FILES=$(ALL_PACKAGES)
 
 #Hooks
 PRECOMMIT_HOOK="./resources/git-hooks/pre-commit"
-
 TEST_IMAGE_DIR="./resources/test-image/"
 
 #Go parameters
 GOCMD=go
 GOINSTALL=$(GOCMD) install
 GOTEST=$(GOCMD) test
+GOPATH=$(shell go env GOPATH)
+DEP=$(GOPATH)/bin/dep
+GOLINT=$(GOPATH)/bin/golint
 .PHONY : all install vet fmt test lint build
 
 all: build test fmt lint vet
@@ -49,7 +51,7 @@ fmt:
 	@go fmt $(ALL_PACKAGES)
 
 lint:
-	@golint -set_exit_status $(GO_FILES)
+	@$(GOLINT) -set_exit_status $(GO_FILES)
 
 precommit: build test fmt lint vet
 

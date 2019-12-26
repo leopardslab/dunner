@@ -1,0 +1,63 @@
+name: Dunner CI
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+    steps:
+    - name: Setup Go
+      uses: actions/setup-go@v1
+      with:
+        go-version: '1.11.x'
+
+    - name: Checkout Dunner
+      uses: actions/checkout@v1
+      with:
+        fetch-depth: 1
+
+    - name: Debug
+      if: matrix.os == 'windows-latest'
+      run: |
+        pwd
+        echo gopath: %GOPATH%
+        go env GOPATH
+        ls %GOPATH%
+
+    - name: Debug
+      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macOS-latest'
+      run: |
+        pwd
+        echo $GOPATH
+        go env GOPATH
+        ls $GOPATH
+
+    - name: Build Dunner and run unit tests
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        make setup
+        make ci
+        $(go env GOPATH)/bin/dunner version
+        $(go env GOPATH)/bin/dunner do show
+
+    - name: Build Dunner and run unit tests
+      if: matrix.os == 'macOS-latest'
+      # Not running unit tests in mac since there is no docker support via github actions
+      run: |
+        make setup
+        make fmt lint vet install
+        $(go env GOPATH)/bin/dunner version
+        $(go env GOPATH)/bin/dunner do show
+
+    # Not using make ci in windows because test-image is not working for windows as busybox image is not available
+    - name: Build Dunner and run unit tests
+      if: matrix.os == 'windows-latest'
+      run: |
+        make setup
+        make fmt lint vet
+        go test -v ./...
+        %GOPATH%bin\dunner version
+        %GOPATH%bin\dunner do show

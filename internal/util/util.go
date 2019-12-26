@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"os/user"
 	"path"
 	"strings"
 	"time"
@@ -15,10 +16,18 @@ import (
 	"github.com/leopardslab/dunner/internal/logger"
 )
 
-var log = logger.Log
+func init() {
+	user, err := user.Current()
+	if err != nil {
+		panic(err)
+	}
+	HomeDir = user.HomeDir
+}
 
 // HomeDir is the environment variable HOME
-var HomeDir = os.Getenv("HOME")
+var HomeDir string
+var log = logger.Log
+
 var userDir = os.Getenv("user")
 
 // progressReader is for indicating the download / upload progress on the console

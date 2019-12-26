@@ -184,7 +184,7 @@ func ValidateMountDir(ctx context.Context, fl validator.FieldLevel) bool {
 	}
 	validPerm := false
 	for _, perm := range validDirPermissionModes {
-		if mountValues[2] == perm {
+		if mountValues[len(mountValues)-1] == perm {
 			validPerm = true
 		}
 	}

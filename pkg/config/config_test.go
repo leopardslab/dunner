@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -207,10 +209,14 @@ func TestConfigs_ValidateWithInvalidMountFormat(t *testing.T) {
 	}
 }
 
+// FIXME: Skipped in Windows. Since paths with colon is not incorporated in Dunner, this will not possible for now.
 func TestConfigs_ValidateWithValidMountDirectory(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		return
+	}
 	step := getSampleStep()
 	wd, _ := os.Getwd()
-	step.Mounts = []string{fmt.Sprintf("%s:%s:w", wd, wd)}
+	step.Mounts = []string{fmt.Sprintf("%s:/app:w", wd)}
 	var tasks = make(map[string]Task)
 	tasks["stats"] = Task{Steps: []Step{step}}
 	var configs = &Configs{
@@ -224,27 +230,14 @@ func TestConfigs_ValidateWithValidMountDirectory(t *testing.T) {
 	}
 }
 
-func TestConfigs_ValidateWithMountDirFromEnv(t *testing.T) {
-	step := getSampleStep()
-	wd, _ := os.Getwd()
-	step.Mounts = []string{fmt.Sprintf("%s:%s:w", wd, wd)}
-	var tasks = make(map[string]Task)
-	tasks["stats"] = Task{Steps: []Step{step}}
-	var configs = &Configs{
-		Tasks: tasks,
-	}
-
-	errs := configs.Validate()
-
-	if errs != nil {
-		t.Fatalf("expected no errors, got %s", errs)
-	}
-}
-
+// FIXME: Skipped in Windows. Since paths with colon is not incorporated in Dunner, this will not possible for now.
 func TestConfigs_ValidateWithNoModeGiven(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		return
+	}
 	step := getSampleStep()
 	wd, _ := os.Getwd()
-	step.Mounts = []string{fmt.Sprintf("%s:%s", wd, wd)}
+	step.Mounts = []string{fmt.Sprintf("%s:/app", wd)}
 	var tasks = make(map[string]Task)
 	tasks["stats"] = Task{Steps: []Step{step}}
 	var configs = &Configs{
@@ -388,6 +381,9 @@ func TestInitValidatorForEmptyTag(t *testing.T) {
 	}
 }
 
+var dummyEnvName = "DUNNER_TEST_ENV"
+var dummyEnvValue = "DUNNER_TEST_ENV_VALUE"
+
 var lookupEnvtests = []struct {
 	in  string
 	out string
@@ -397,14 +393,14 @@ var lookupEnvtests = []struct {
 	{"foo", "foo", nil},
 	{"/foo/bar", "/foo/bar", nil},
 	{"/foo/`$bar", "/foo/`$bar", nil},
-	{util.HomeDir, util.HomeDir, nil},
-	{"`$HOME`", util.HomeDir, nil},
-	{"`$HOME`/foo", util.HomeDir + "/foo", nil},
-	{"`$HOME`/foo/`$HOME`", util.HomeDir + "/foo/" + util.HomeDir, nil},
+	{"`$DUNNER_TEST_ENV`", dummyEnvValue, nil},
+	{"`$DUNNER_TEST_ENV`/foo", fmt.Sprintf("%s/foo", dummyEnvValue), nil},
+	{"`$DUNNER_TEST_ENV`/foo/`$DUNNER_TEST_ENV`", fmt.Sprintf("%s/foo/%s", dummyEnvValue, dummyEnvValue), nil},
 	{"`$INVALID_TEST`/foo", "`$INVALID_TEST`/foo", fmt.Errorf("could not find environment variable 'INVALID_TEST'")},
 }
 
 func TestLookUpDirectory(t *testing.T) {
+	os.Setenv(dummyEnvName, dummyEnvValue)
 	for _, tt := range lookupEnvtests {
 		t.Run(tt.in, func(t *testing.T) {
 			parsedDir, err := lookupDirectory(tt.in)
@@ -420,7 +416,9 @@ func TestLookUpDirectory(t *testing.T) {
 
 func TestDecodeMount(t *testing.T) {
 	step := &docker.Step{}
-	mounts := []string{fmt.Sprintf("%s:/app:r", util.HomeDir)}
+	currentDirName := "test_dir"
+	mounts := []string{fmt.Sprintf("%s:/app:r", currentDirName)}
+	absEnv, _ := filepath.Abs(currentDirName)
 
 	err := DecodeMount(mounts, step)
 
@@ -433,14 +431,15 @@ func TestDecodeMount(t *testing.T) {
 	if len((*step).ExtMounts) != 1 {
 		t.Fatalf("expected ExtMounts to be of length 1, got %d", len((*step).ExtMounts))
 	}
-	if (*step).ExtMounts[0].Source != util.HomeDir {
-		t.Fatalf("expected ExtMounts to be %s, got %s", util.HomeDir, (*step).ExtMounts[0].Source)
+	if (*step).ExtMounts[0].Source != absEnv {
+		t.Fatalf("expected ExtMounts Source to be %s, got %s", absEnv, (*step).ExtMounts[0].Source)
 	}
 }
 
-func TestDecodeMountWithEnvironmentVariable(t *testing.T) {
+func TestDecodeMountWithRelativeSource(t *testing.T) {
+	absEnv, _ := filepath.Abs(dummyEnvValue)
 	step := &docker.Step{}
-	mounts := []string{"/tmp:/app"}
+	mounts := []string{fmt.Sprintf("%s:%s", dummyEnvValue, dummyEnvValue)}
 
 	err := DecodeMount(mounts, step)
 
@@ -453,11 +452,11 @@ func TestDecodeMountWithEnvironmentVariable(t *testing.T) {
 	if len((*step).ExtMounts) != 1 {
 		t.Fatalf("expected ExtMounts to be of length 1, got %d", len((*step).ExtMounts))
 	}
-	if (*step).ExtMounts[0].Source != "/tmp" {
-		t.Fatalf("expected ExtMounts Source to be '/tmp', got %s", (*step).ExtMounts[0].Source)
+	if (*step).ExtMounts[0].Source != absEnv {
+		t.Fatalf("expected ExtMounts Source to be %s, got %s", absEnv, (*step).ExtMounts[0].Source)
 	}
-	if (*step).ExtMounts[0].Target != "/app" {
-		t.Fatalf("expected ExtMounts Source to be '/app', got %s", (*step).ExtMounts[0].Target)
+	if (*step).ExtMounts[0].Target != dummyEnvValue {
+		t.Fatalf("expected ExtMounts Source to be %s, got %s", dummyEnvValue, (*step).ExtMounts[0].Target)
 	}
 }
 
