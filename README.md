@@ -73,3 +73,5 @@ Have a look at [Dunner Milestones](https://github.com/leopardslab/dunner/milesto
 ## Contributing
 
 We'd love your help to fix bugs and add features. The maintainers actively manage the issues list, and try to highlight issues suitable for newcomers. The project follows the typical GitHub pull request model. Before starting any work, please either comment on an existing issue, or file a new one. Refer our [Developer Guide](https://github.com/leopardslab/dunner/wiki/Developer-Guide) for more.
+#Dunner logo
+https://github.com/leopardslab/dunner/issues/190#issue-543767762
