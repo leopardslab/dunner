@@ -8,6 +8,7 @@
 [![Join the chat at https://gitter.im/LeaopardLabs/Dunner](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/LeaopardLabs/Dunner)
 
 > The Docker Task Runner
+![Image](https://user-images.githubusercontent.com/58595802/72555757-3bb95000-38c3-11ea-8c51-7129758081dd.png)
 
 Dunner is a task runner tool based on Docker, simple and flexible. You can define tasks and configure the environment in your `.dunner.yaml` file and then run as `dunner do <taskname>`.
 
