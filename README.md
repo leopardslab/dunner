@@ -5,7 +5,7 @@
 [![Build Status](https://travis-ci.org/leopardslab/Dunner.svg?branch=master)](https://travis-ci.org/leopardslab/Dunner)
 [![GoDoc](https://godoc.org/github.com/leopardslab/dunner?status.svg)](https://godoc.org/github.com/leopardslab/dunner)
 [![GoReport](https://goreportcard.com/badge/github.com/leopardslab/dunner)](https://goreportcard.com/report/github.com/leopardslab/dunner)
-[![Join the chat at https://gitter.im/LeaopardLabs/Dunner](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/LeaopardLabs/Dunner)
+![Logo](https://user-images.githubusercontent.com/59760341/72923911-f17a1800-3d75-11ea-9425-93ec1a8be1a2.png)
 
 > The Docker Task Runner
 
